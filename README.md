@@ -70,6 +70,8 @@ After starting the server, access the tool through your browser to configure cam
 
 ## Features
 
+![Screenshot 2025-03-23 005933](https://github.com/user-attachments/assets/ef421090-19f5-449f-9470-24083b8767f9)
+
 - **User Authentication**: Register, login, and manage profiles securely.
     
 - **Dynamic Storage Calculation**: Compute storage requirements based on selected parameters.
