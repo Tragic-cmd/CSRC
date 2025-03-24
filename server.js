@@ -48,6 +48,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Serve private assets only for authenticated users
 app.use('/private', ensureAuthenticated, express.static(path.join(__dirname, 'private')));
 
+app.get('/profile', ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'private/profile.html'));
+});
+
 // Protected: Main tool page (Index) and Camera Sizer Script
 app.get('/', ensureAuthenticated, (req, res) => res.sendFile(path.join(__dirname, 'private/index.html')));
 
