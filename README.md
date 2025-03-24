@@ -33,6 +33,8 @@ The **Camera Server Sizing Tool** is a web-based application that helps users ca
 ### Steps to Install
 
 ```
+npm init -y npm install express body-parser jsonwebtoken bcrypt
+
 # Clone the repository
 git clone https://github.com/github-username/camera-server-sizer.git
 
