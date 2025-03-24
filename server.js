@@ -51,6 +51,11 @@ app.use('/private', ensureAuthenticated, express.static(path.join(__dirname, 'pr
 // Protected: Main tool page (Index) and Camera Sizer Script
 app.get('/', ensureAuthenticated, (req, res) => res.sendFile(path.join(__dirname, 'private/index.html')));
 
+app.get('/camera-server-sizer.js', ensureAuthenticated, (req, res) => {
+  res.type('application/javascript'); // Explicit MIME type
+  res.sendFile(path.join(__dirname, 'private/camera-server-sizer.js'));
+});
+
 // Fetch authenticated user data
 app.get('/get-user', (req, res) => {
   console.log('Session Data:', req.session); // Debugging log
