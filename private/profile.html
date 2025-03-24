@@ -9,32 +9,63 @@
 </head>
 <body>
   <div class="container">
-    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+    <div style="display: flex; justify-content: space-between; gap: 10px;">
       <button class="toggle-theme" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+      <a href="/" class="button">Camera Sizing Tool</a>
     </div>
+
     <h2>User Profile</h2>
     <p>Welcome, <span id="username"></span>!</p>
-    
+
+    <!-- User Info Form -->
+    <form method="POST" action="/update-profile" class="form-section">
+      <h3>Update Profile</h3>
+
+      <div class="form-group">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required />
+      </div>
+
+      <div class="form-group">
+        <label for="real_name">Full Name:</label>
+        <input type="text" id="real_name" name="real_name" required />
+      </div>
+
+      <div class="form-group">
+        <label for="date_of_birth">Date of Birth:</label>
+        <input type="date" id="date_of_birth" name="date_of_birth" required />
+      </div>
+
+      <div class="form-group">
+        <button type="submit" class="button">Update Profile</button>
+      </div>
+    </form>
+
+    <!-- Password Update Form -->
     <form method="POST" action="/update-password" class="form-section" onsubmit="return validatePasswordChange()">
       <h3>Change Password</h3>
+
       <div class="form-group">
         <label for="oldPassword">Old Password:</label>
         <input type="password" id="oldPassword" name="oldPassword" placeholder="Enter old password" required />
       </div>
+
       <div class="form-group">
         <label for="newPassword">New Password:</label>
         <input type="password" id="newPassword" name="newPassword" placeholder="Enter new password" required />
       </div>
+
       <div class="form-group">
         <label for="confirmNewPassword">Confirm New Password:</label>
         <input type="password" id="confirmNewPassword" name="confirmNewPassword" placeholder="Confirm new password" required />
         <p id="password-error" class="validation-error" style="display: none;">Passwords do not match.</p>
       </div>
+
       <div class="form-group">
         <button type="submit" class="button">Update Password</button>
       </div>
     </form>
-    
+
     <p><a href="/logout" class="button">Logout</a></p>
   </div>
 
@@ -43,17 +74,20 @@
       document.body.classList.toggle('dark-mode');
       localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
     }
-    
+
     window.onload = function () {
       const savedTheme = localStorage.getItem('theme');
       if (savedTheme === 'dark') {
         document.body.classList.add('dark-mode');
       }
-      
+
       fetch('/get-user')
         .then(response => response.json())
         .then(data => {
           document.getElementById("username").textContent = data.username;
+          document.getElementById("email").value = data.email;
+          document.getElementById("real_name").value = data.real_name;
+          document.getElementById("date_of_birth").value = data.date_of_birth;
         })
         .catch(error => console.error('Error fetching user data:', error));
     }
@@ -62,7 +96,7 @@
       const newPassword = document.getElementById('newPassword').value;
       const confirmNewPassword = document.getElementById('confirmNewPassword').value;
       const errorText = document.getElementById('password-error');
-      
+
       if (newPassword !== confirmNewPassword) {
         errorText.style.display = 'block';
         return false;

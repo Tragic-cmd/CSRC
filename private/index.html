@@ -142,7 +142,7 @@
 
                 <div class="form-group">
                     <label for="maxCamerasPerServer">Max Cameras per Server:</label>
-                    <input type="number" id="maxCamerasPerServer" min="1" value="32">
+                    <input type="number" id="maxCamerasPerServer" min="1" value="100">
                 </div>
 
                 <div class="form-group">
@@ -312,7 +312,7 @@
 
     function loadSavedConfigurations() {
       const savedConfigs = JSON.parse(localStorage.getItem('configurations')) || [];
-      const container = document.getElementById('configurations');
+      const container = document.getElementById('sidebar-configurations');
       container.innerHTML = '';
       
       if (savedConfigs.length === 0) {
@@ -329,9 +329,24 @@
     }
 
     function loadConfiguration(config) {
-      // Populate your form fields here using the config object
-      console.log('Loading config:', config);
-      // Example: document.getElementById('cameraCount').value = config.cameraCount;
+        document.getElementById('siteNameInput').value = config.siteName;
+        document.getElementById('cameraCount').value = config.cameraCount;
+        document.getElementById('resolution').value = config.resolution;
+        document.getElementById('compression').value = config.compression;
+        document.getElementById('frameRate').value = config.frameRate;
+        document.getElementById('motionActivity').value = config.motionActivity;
+        document.getElementById('recordingMode').addEventListener('change', function () {
+            document.getElementById('hoursPerDayGroup').style.display =
+                this.value === 'custom' ? 'block' : 'none';
+        });
+        document.getElementById('hoursPerDay').value = config.hoursPerDay;
+        document.getElementById('retentionDays').value = config.retentionDays;
+        document.getElementById('hdSize').value = config.hdSize;
+        document.getElementById('redundancyLevel').value = config.redundancyLevel;
+        document.getElementById('storageBuffer').value = config.storageBuffer;
+        document.getElementById('filesystemOverhead').value = config.filesystemOverhead;
+        document.getElementById('maxCamerasPerServer').value = config.maxCamerasPerServer;
+        document.getElementById('hardwareAcceleration').value = config.hardwareAcceleration;
     }
   </script>
   <script src="camera-server-sizer.js"></script>

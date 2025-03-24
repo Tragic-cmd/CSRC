@@ -605,59 +605,117 @@ const CameraServerSizer = {
     
     // Generate virtualization-specific recommendations
     generateVirtualizationRecommendations: function(results) {
-        // Determine optimal hypervisor based on VM requirements
+        // Industry-standard hypervisor selection based on VM count and storage size
         let hypervisorRecommendation;
-        if (results.vmsNeeded <= 4 && results.storageWithOverheadTB < 100) {
-            hypervisorRecommendation = "VMware vSphere Essentials or Microsoft Hyper-V";
+    
+        if (results.vmsNeeded <= 4 && results.storageWithOverheadTB < 50) {
+            hypervisorRecommendation = "VMware vSphere Essentials, Microsoft Hyper-V, or Proxmox VE (for small deployments with minimal HA requirements)";
         } else if (results.vmsNeeded <= 16) {
-            hypervisorRecommendation = "VMware vSphere Standard or Microsoft Hyper-V with System Center";
+            hypervisorRecommendation = "VMware vSphere Standard, Microsoft Hyper-V with System Center, or XCP-ng (for medium-scale deployments with centralized management)";
+        } else if (results.vmsNeeded <= 64) {
+            hypervisorRecommendation = "VMware vSphere Enterprise Plus, Microsoft Hyper-V Datacenter, or Nutanix AHV (for large-scale environments requiring vMotion and DRS)";
         } else {
-            hypervisorRecommendation = "VMware vSphere Enterprise Plus or Microsoft Hyper-V Datacenter Edition";
+            hypervisorRecommendation = "VMware Cloud Foundation, Red Hat OpenShift Virtualization, or an enterprise Kubernetes-based hypervisor (for cloud-scale and hyperconverged environments)";
         }
-        
-        // Determine storage approach based on scale
+    
+        // Storage approach following industry best practices based on performance, scalability, and redundancy
         let storageApproach;
-        if (results.storageWithOverheadTB < 50) {
-            storageApproach = "Direct-attached storage or entry-level SAN";
-        } else if (results.storageWithOverheadTB < 200) {
-            storageApproach = "Mid-tier SAN or NAS solution with dedicated storage network";
+    
+        if (results.storageWithOverheadTB < 20) {
+            storageApproach = "Enterprise NVMe SSDs in a direct-attached (DAS) or NAS configuration with RAID10 for high IOPS and redundancy.";
+        } else if (results.storageWithOverheadTB < 100) {
+            storageApproach = "Hybrid storage (SSD + HDD) using a mid-tier SAN with dedicated iSCSI or Fiber Channel (FC) storage networking.";
+        } else if (results.storageWithOverheadTB < 500) {
+            storageApproach = "All-Flash SAN (AFA) or high-performance NVMe-based storage arrays with dual controllers and redundant paths.";
         } else {
-            storageApproach = "Enterprise SAN or hyperconverged infrastructure";
+            storageApproach = "Hyperconverged infrastructure (HCI) using vSAN, Nutanix, or Dell VxRail for scalable, high-availability storage with distributed redundancy.";
         }
+    
+        // High Availability (HA) recommendations following industry standards for redundancy and disaster recovery
+        let highAvailabilityRecommendation;
+    
+        if (results.vmsNeeded <= 8) {
+            highAvailabilityRecommendation = "Basic HA with failover clustering, scheduled VM snapshots, and offsite backups.";
+        } else if (results.vmsNeeded <= 32) {
+            highAvailabilityRecommendation = "Live migration (VMware vMotion, Hyper-V Live Migration) with redundant networking and backup replication.";
+        } else if (results.vmsNeeded <= 64) {
+            highAvailabilityRecommendation = "Fully redundant HA cluster with shared storage, automated failover (VMware HA, Hyper-V Failover Clustering), and geo-redundant backups.";
+        } else {
+            highAvailabilityRecommendation = "Active-active datacenters with geo-redundancy, stretch clusters, automated disaster recovery orchestration, and cloud-based DRaaS (Disaster Recovery as a Service).";
+        }
+    
+        // Additional recommendation for best practices in networking
+        let networkingRecommendation;
         
+        if (results.vmsNeeded <= 16) {
+            networkingRecommendation = "Dedicated VLANs for VM traffic, redundant gigabit Ethernet, and basic QoS policies.";
+        } else if (results.vmsNeeded <= 64) {
+            networkingRecommendation = "10GbE or Fiber Channel backbone, redundant switches, and network segmentation for security.";
+        } else {
+            networkingRecommendation = "25GbE or higher with spine-leaf architecture, SDN for automation, and encrypted VXLAN overlays for secure multi-site networking.";
+        }
+    
         return {
             hypervisorRecommendation,
             storageApproach,
+            highAvailabilityRecommendation,
+            networkingRecommendation,
             hostRecommendation: this.generateHostHardwareRecommendation(results)
         };
     },
     
     // Generate physical host hardware recommendations
     generateHostHardwareRecommendation: function(results) {
-        // CPU recommendation based on total cores required across all VMs
-        let cpuRecommendation;
+        // CPU Recommendation
         const totalCoresNeeded = results.vmsNeeded * results.cpuCoresPerVM;
-        
-        if (totalCoresNeeded <= 32) {
-            cpuRecommendation = "Single socket server with AMD EPYC or Intel Xeon Silver/Gold processor";
+        let cpuRecommendation;
+    
+        if (totalCoresNeeded <= 1) {
+            cpuRecommendation = "Low-power single-core processor (e.g., Intel Atom, AMD Ryzen Embedded)";
+        } else if (totalCoresNeeded <= 2) {
+            cpuRecommendation = "Dual-core processor (e.g., Intel Core i3, AMD Ryzen 3)";
+        } else if (totalCoresNeeded <= 4) {
+            cpuRecommendation = "Quad-core server processor (e.g., Intel Xeon E, AMD Ryzen 5)";
+        } else if (totalCoresNeeded <= 8) {
+            cpuRecommendation = "Octa-core server processor (e.g., Intel Xeon E, AMD Ryzen 7)";
+        } else if (totalCoresNeeded <= 16) {
+            cpuRecommendation = "Single socket with AMD EPYC 7002/7003 or Intel Xeon Silver (16+ cores)";
+        } else if (totalCoresNeeded <= 32) {
+            cpuRecommendation = "Single socket with AMD EPYC 7003 or Intel Xeon Gold (32+ cores)";
         } else if (totalCoresNeeded <= 64) {
-            cpuRecommendation = "Dual socket server with AMD EPYC or Intel Xeon Gold processors";
+            cpuRecommendation = "Dual socket server with AMD EPYC 7003/9004 or Intel Xeon Gold (64+ cores)";
+        } else if (totalCoresNeeded <= 128) {
+            cpuRecommendation = "Dual socket server with AMD EPYC 9004 or Intel Xeon Platinum (128+ cores)";
         } else {
-            cpuRecommendation = "Multiple dual socket servers with AMD EPYC or Intel Xeon Platinum processors";
+            cpuRecommendation = "Multiple high-core-count dual socket servers with AMD EPYC 9004 or Intel Xeon Platinum (128+ cores per server)";
         }
-        
-        // RAM recommendation based on total VM memory requirements
+    
+        // RAM Recommendation
         const totalRamNeeded = results.vmsNeeded * results.ramPerVM;
         let ramRecommendation;
-        
-        if (totalRamNeeded <= 256) {
-            ramRecommendation = "256GB RAM per host";
+    
+        if (totalRamNeeded <= 4) {
+            ramRecommendation = "4GB RAM per host (suitable for low-demand workloads)";
+        } else if (totalRamNeeded <= 8) {
+            ramRecommendation = "8GB RAM per host (minimal configuration for small deployments)";
+        } else if (totalRamNeeded <= 16) {
+            ramRecommendation = "16GB RAM per host (basic workloads and light processing)";
+        } else if (totalRamNeeded <= 32) {
+            ramRecommendation = "32GB RAM per host (good for small-scale deployments)";
+        } else if (totalRamNeeded <= 64) {
+            ramRecommendation = "64GB RAM per host (recommended for moderate workloads)";
+        } else if (totalRamNeeded <= 128) {
+            ramRecommendation = "128GB RAM per host (sufficient for video processing & analytics)";
+        } else if (totalRamNeeded <= 256) {
+            ramRecommendation = "256GB RAM per host (ideal for high-performance workloads)";
         } else if (totalRamNeeded <= 512) {
-            ramRecommendation = "512GB RAM per host";
+            ramRecommendation = "512GB RAM per host (optimal for dense VM environments)";
+        } else if (totalRamNeeded <= 1024) {
+            ramRecommendation = "1TB RAM per host (for massive-scale video processing and AI workloads)";
         } else {
-            ramRecommendation = "1TB+ RAM per host";
+            ramRecommendation = "1.5TB+ RAM per host (for enterprise-scale, AI, and high-memory applications)";
         }
-        
+    
         return {
             cpuRecommendation,
             ramRecommendation
@@ -668,25 +726,32 @@ const CameraServerSizer = {
     displayResults: function(results) {
         try {
             // Storage Analysis
-            document.getElementById('bitratePerCamera').textContent = `${results.bitrateMbps} Mbps`;
+            document.getElementById('bitratePerCamera').textContent = `${results.bitrateMbps.toFixed(2)} Mbps`;
             document.getElementById('dailyStoragePerCamera').textContent = `${results.dailyStoragePerCamera.toFixed(2)} GB/day`;
             document.getElementById('totalRawStorage').textContent = `${results.totalRawStorageTB.toFixed(2)} TB`;
             document.getElementById('storageWithBuffer').textContent = `${results.storageWithBufferTB.toFixed(2)} TB`;
             document.getElementById('storageWithOverhead').textContent = `${results.storageWithOverheadTB.toFixed(2)} TB`;
-            
+
+            // Generate Storage Analysis Summary
             document.getElementById('storageAnalysis').innerHTML = `
-                <p>Based on your configuration, each camera will generate approximately
-                <strong>${results.bitrateMbps} Mbps</strong> of data and require 
-                <strong>${results.dailyStoragePerCamera.toFixed(2)} GB</strong> of storage per day. 
-                With ${this.inputs.cameraCount} cameras and a retention period of 
-                ${this.inputs.retentionDays} days, you'll need a total of 
-                <strong>${results.storageWithOverheadTB.toFixed(2)} TB</strong> of usable storage space 
-                including buffer and filesystem overhead.</p>
+                <p><strong>Storage Analysis Summary:</strong></p>
+                <ul>
+                    <li><strong>Per Camera Bitrate:</strong> ${results.bitrateMbps.toFixed(2)} Mbps</li>
+                    <li><strong>Per Camera Daily Storage:</strong> ${results.dailyStoragePerCamera.toFixed(2)} GB/day</li>
+                    <li><strong>Total Raw Storage Needed:</strong> ${results.totalRawStorageTB.toFixed(2)} TB</li>
+                    <li><strong>Storage with Buffer:</strong> ${results.storageWithBufferTB.toFixed(2)} TB</li>
+                    <li><strong>Final Storage Requirement (with Overhead):</strong> ${results.storageWithOverheadTB.toFixed(2)} TB</li>
+                </ul>
+                <p>For <strong>${this.inputs.cameraCount} cameras</strong> with a retention period of 
+                <strong>${this.inputs.retentionDays} days</strong>, a total of 
+                <strong>${results.storageWithOverheadTB.toFixed(2)} TB</strong> of usable storage is required, 
+                accounting for buffer and filesystem overhead.</p>
+                <p><strong>Recommendation:</strong> To ensure long-term reliability, consider RAID configurations optimized 
+                for high write endurance and redundancy, such as RAID 6 or RAID 10.</p>
             `;
-            
-            // Update the heading to VM-specific terminology
-            const serverHeadings = document.querySelectorAll('.server-heading');
-            serverHeadings.forEach(heading => {
+
+            // Update the headings to reflect VM-based storage allocation
+            document.querySelectorAll('.server-heading').forEach(heading => {
                 heading.textContent = heading.textContent.replace('Server', 'VM');
             });
             
@@ -696,15 +761,43 @@ const CameraServerSizer = {
             document.getElementById('driveSize').textContent = `${results.raidConfig.hdSizeTB} TB`;
             document.getElementById('totalRawCapacity').textContent = `${results.raidConfig.totalRawCapacity.toFixed(2)} TB`;
             document.getElementById('usableCapacity').textContent = `${results.raidConfig.usableCapacity.toFixed(2)} TB`;
-            
+
+            // Generate RAID Analysis
             document.getElementById('raidAnalysis').innerHTML = `
-                <p>To achieve the required storage capacity with redundancy, we recommend a 
-                <strong>${results.raidConfig.raidLevel}</strong> configuration with 
-                <strong>${results.raidConfig.totalDrives}</strong> drives of 
-                <strong>${results.raidConfig.hdSizeTB} TB</strong> each. This will provide a total raw capacity of 
-                <strong>${results.raidConfig.totalRawCapacity.toFixed(2)} TB</strong> with 
-                <strong>${results.raidConfig.usableCapacity.toFixed(2)} TB</strong> of usable storage.</p>
+                <p><strong>Recommended RAID Configuration:</strong></p>
+                <ul>
+                    <li><strong>RAID Level:</strong> ${results.raidConfig.raidLevel} (optimized for ${getRaidBenefits(results.raidConfig.raidLevel)})</li>
+                    <li><strong>Total Drives Required:</strong> ${results.raidConfig.totalDrives} × ${results.raidConfig.hdSizeTB} TB drives</li>
+                    <li><strong>Raw Storage Capacity:</strong> ${results.raidConfig.totalRawCapacity.toFixed(2)} TB</li>
+                    <li><strong>Usable Storage Capacity:</strong> ${results.raidConfig.usableCapacity.toFixed(2)} TB (after redundancy & overhead)</li>
+                    <li><strong>Fault Tolerance:</strong> ${getRaidFaultTolerance(results.raidConfig.raidLevel)}</li>
+                </ul>
+                <p><strong>Note:</strong> Ensure proper disk monitoring and hot spare drives for higher resilience.</p>
             `;
+
+            // Function to provide RAID benefits
+            function getRaidBenefits(raidLevel) {
+                const benefits = {
+                    'RAID 0': 'high performance but no redundancy',
+                    'RAID 1': 'mirroring for data protection',
+                    'RAID 5': 'balanced performance and redundancy',
+                    'RAID 6': 'extra fault tolerance with dual-parity',
+                    'RAID 10': 'high performance and redundancy (striped mirroring)'
+                };
+                return benefits[raidLevel] || 'optimized redundancy and performance';
+            }
+
+            // Function to determine fault tolerance
+            function getRaidFaultTolerance(raidLevel) {
+                const faultTolerance = {
+                    'RAID 0': 'No drive failure tolerance',
+                    'RAID 1': 'Can tolerate 1 drive failure',
+                    'RAID 5': 'Can tolerate 1 drive failure',
+                    'RAID 6': 'Can tolerate up to 2 drive failures',
+                    'RAID 10': 'Can tolerate up to 1 drive failure per mirrored pair'
+                };
+                return faultTolerance[raidLevel] || 'Varies based on configuration';
+            }
 
             // VM Requirements
             document.getElementById('vmsNeeded').textContent = results.vmsNeeded;
@@ -746,12 +839,15 @@ const CameraServerSizer = {
             if (results.hardwareAcceleration !== 'none') {
                 document.getElementById('hwAccelNote').innerHTML = `
                     <div class="note">
-                        <p><strong>Note:</strong> These calculations assume <strong>${results.hardwareAcceleration} hardware acceleration</strong> 
-                        is available for video processing. Make sure your hardware supports this capability.
-                        ${results.hardwareAcceleration === 'full' ? 
-                        'Full hardware acceleration typically requires specialized server GPUs like NVIDIA Tesla or Quadro cards.' : 
-                        'Partial hardware acceleration may be available with consumer-grade GPUs or some modern CPUs.'}
-                        </p>
+                        <p><strong>Hardware Acceleration Notice:</strong> The calculations assume 
+                        <strong>${results.hardwareAcceleration} hardware acceleration</strong> is enabled for video processing.</p>
+                        <ul>
+                            <li><strong>Ensure compatibility:</strong> Verify that your hardware and software support this acceleration mode.</li>
+                            ${results.hardwareAcceleration === 'full' ? 
+                            '<li><strong>Full Acceleration:</strong> Requires dedicated server GPUs such as <strong>NVIDIA Tesla, Quadro, or RTX AI-enabled cards</strong>.</li>' :
+                            '<li><strong>Partial Acceleration:</strong> May be available with <strong>integrated GPU (Intel QuickSync) or consumer-grade GPUs (NVIDIA GTX/RTX, AMD Radeon)</strong>.</li>'}
+                            <li><strong>Driver & Codec Support:</strong> Ensure the required GPU drivers and video codecs (H.264, H.265) are installed and optimized.</li>
+                        </ul>
                     </div>
                 `;
                 document.getElementById('hwAccelNote').style.display = 'block';
@@ -761,21 +857,26 @@ const CameraServerSizer = {
 
             // Performance Recommendations
             let performanceRecs = `
-                <li>Network: Implement a dedicated network for camera traffic with at least 
-                ${Math.ceil(results.networkBandwidthMbps * results.vmsNeeded / 1000)} Gbps capacity.</li>
-                <li>Storage: Use enterprise-grade storage drives rated for 24/7 surveillance workloads.</li>
+                <li><strong>Network:</strong> Implement a dedicated VLAN for camera traffic with at least 
+                ${Math.ceil(results.networkBandwidthMbps * results.vmsNeeded / 1000)} Gbps capacity. 
+                Use redundant 10GbE+ connections for high-bandwidth deployments.</li>
+                <li><strong>Storage:</strong> Use enterprise-grade storage rated for 24/7 surveillance workloads 
+                (e.g., WD Purple Pro, Seagate SkyHawk AI) with optimized write endurance.</li>
+                <li><strong>Compute:</strong> Enable CPU pinning and NUMA awareness to optimize VM performance for high-throughput workloads.</li>
             `;
 
-            // Add recommendations based on camera count
+            // Additional recommendations based on camera density
             if (results.camerasPerVM > 20) {
                 performanceRecs += `
-                    <li>Consider distributing cameras across more VMs for better performance and fault tolerance.</li>
+                    <li>Distribute cameras across multiple VMs to balance CPU load and improve fault tolerance.</li>
+                    <li>Consider GPU acceleration (e.g., NVIDIA Tesla T4) for analytics-heavy workloads.</li>
                 `;
             }
 
             if (results.vmsNeeded > 4) {
                 performanceRecs += `
-                    <li>Implement a load balancing solution for client connections.</li>
+                    <li>Implement a load balancing solution (e.g., Nginx, HAProxy) for client connections to optimize traffic distribution.</li>
+                    <li>Use SR-IOV or RDMA-enabled networking to minimize latency for large-scale deployments.</li>
                 `;
             }
 
@@ -783,14 +884,17 @@ const CameraServerSizer = {
 
             // Redundancy Recommendations
             let redundancyRecs = `
-                <li>Implement VM High Availability (HA) to automatically restart VMs in case of host failure.</li>
-                <li>Consider a dual-controller storage solution for storage path redundancy.</li>
+                <li><strong>High Availability:</strong> Implement VM HA (VMware HA, Hyper-V Failover Clustering) to ensure rapid recovery from host failures.</li>
+                <li><strong>Storage Redundancy:</strong> Deploy a dual-controller SAN or hyperconverged storage with erasure coding for fault tolerance.</li>
+                <li><strong>Network Redundancy:</strong> Use LACP or MLAG for network link aggregation, ensuring failover protection.</li>
             `;
 
+            // If multiple physical hosts are needed, add additional failover recommendations
             if (results.physicalHostsNeeded > 1) {
-                redundancyRecs += `
-                    <li>Configure multiple recording servers to provide failover capabilities.</li>
-                `;
+            redundancyRecs += `
+                <li>Deploy multiple recording servers with active-active or active-passive failover for uninterrupted video recording.</li>
+                <li>Implement cross-site replication for disaster recovery in mission-critical environments.</li>
+            `;
             }
 
             document.getElementById('redundancyRecommendations').innerHTML = redundancyRecs;
@@ -802,15 +906,17 @@ const CameraServerSizer = {
 
             if (expansionCapacity > 0) {
                 scalingRecs += `
-                    <li>Your storage configuration can support approximately ${expansionCapacity} additional cameras 
-                    without adding more storage.</li>
+                    <li>Your current storage configuration can support approximately <strong>${expansionCapacity} additional cameras</strong> 
+                    before requiring an upgrade.</li>
                 `;
             }
 
             scalingRecs += `
-                <li>For future expansion, reserve at least ${Math.ceil(results.cpuCoresPerVM * 0.3)} additional CPU cores 
-                and ${Math.ceil(results.ramPerVM * 0.3)} GB of RAM per physical host.</li>
-                <li>Consider a hyperconverged infrastructure for easier scaling of both compute and storage resources.</li>
+                <li><strong>Future CPU/RAM Needs:</strong> Reserve at least <strong>${Math.ceil(results.cpuCoresPerVM * 0.3)}</strong> additional CPU cores 
+                and <strong>${Math.ceil(results.ramPerVM * 0.3)} GB</strong> of RAM per physical host for future expansion.</li>
+                <li><strong>Storage Scaling:</strong> Consider a hyperconverged infrastructure or scale-out NAS (e.g., Dell VxRail, NetApp AFF) 
+                for seamless compute and storage scaling.</li>
+                <li><strong>Networking Expansion:</strong> Plan for 25GbE+ network uplinks if camera density increases significantly.</li>
             `;
 
             document.getElementById('scalingRecommendations').innerHTML = scalingRecs;
