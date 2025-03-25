@@ -70,6 +70,15 @@ npm start
 
 Once the server is running, access the tool via your browser, configure camera settings, and receive real-time recommendations.
 
+### Add owner role to an account
+
+```sql
+cd path/to/your/project
+sqlite3 users.db
+UPDATE users SET role = 'owner' WHERE username = 'administrator';
+SELECT username, role FROM users WHERE username = 'administrator';
+```
+
 ## Features
 
 ![Screenshot 2025-03-23 005933](https://github.com/user-attachments/assets/ef421090-19f5-449f-9470-24083b8767f9)
