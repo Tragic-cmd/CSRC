@@ -8,7 +8,26 @@ const path = require('path');
 const app = express();
 const db = new sqlite3.Database('./users.db');
 
-// Create the users table with new fields
+// Wrap db.get() and db.run() inside Promise-based functions
+function dbGet(query, params = []) {
+  return new Promise((resolve, reject) => {
+      db.get(query, params, (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+      });
+  });
+}
+
+function dbRun(query, params = []) {
+  return new Promise((resolve, reject) => {
+      db.run(query, params, function (err) {
+          if (err) reject(err);
+          else resolve(this);
+      });
+  });
+}
+
+// Create the users table with additional fields
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -16,18 +35,34 @@ db.serialize(() => {
     email TEXT UNIQUE NOT NULL,
     real_name TEXT NOT NULL,
     date_of_birth TEXT NOT NULL,
-    password TEXT NOT NULL
+    password TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    status TEXT DEFAULT 'active',
+    profile_picture TEXT DEFAULT NULL,
+    two_factor_enabled INTEGER DEFAULT 0,
+    last_login TEXT DEFAULT NULL,
+    reset_token TEXT DEFAULT NULL,
+    reset_token_expires INTEGER DEFAULT NULL
   )`);
 });
 
 console.log("Database and users table created successfully.");
 
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());  // ✅ Required for JSON requests
+app.use(bodyParser.urlencoded({ extended: true })); // ✅ Parses form data (x-www-form-urlencoded)
+
+// Session settings
 app.use(session({
   secret: 'your_secret_key',
   resave: false,
-  saveUninitialized: false, // Change to false to avoid empty sessions
-  cookie: { secure: false } // Set to true if using HTTPS
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production', // ✅ Secure only in production
+    httpOnly: true, // ✅ Prevents JavaScript access (XSS protection)
+    sameSite: 'strict' // ✅ Prevents CSRF attacks
+  }
 }));
 
 // Serve only public static files
@@ -40,6 +75,23 @@ function ensureAuthenticated(req, res, next) {
   } else {
     res.redirect('/login.html');
   }
+}
+
+// Role-based authorization middleware
+function authorize(requiredRole) {
+  return (req, res, next) => {
+      if (!req.session.user || !req.session.user.role) {
+          return res.status(403).json({ error: 'Access denied.' });
+      }
+
+      const roleHierarchy = { user: 1, admin: 2, owner: 3 };
+
+      if ((roleHierarchy[req.session.user.role] || 0) < roleHierarchy[requiredRole]) {
+          return res.status(403).json({ error: 'Insufficient permissions.' });
+      }
+
+      next();
+  };
 }
 
 // Serve static files from 'public' (accessible without authentication)
@@ -61,65 +113,140 @@ app.get('/camera-server-sizer.js', ensureAuthenticated, (req, res) => {
 });
 
 // Fetch authenticated user data
-app.get('/get-user', (req, res) => {
-  console.log('Session Data:', req.session); // Debugging log
+app.get('/get-user', async (req, res) => {
+  try {
+      if (!req.session.user || !req.session.user.id) {
+          return res.status(401).json({ error: 'User not authenticated' });
+      }
 
-  if (!req.session.user || !req.session.user.id) {
-    console.log('User not found in session');
-    return res.status(401).json({ error: 'User not authenticated' });
+      const userId = req.session.user.id;
+      const row = await dbGet(`SELECT username, email, real_name, date_of_birth, role, status, profile_picture, two_factor_enabled, last_login 
+                               FROM users WHERE id = ?`, 
+                              [userId]);
+
+      if (!row) return res.status(404).json({ error: 'User not found' });
+
+      res.json(row);
+  } catch (err) {
+      console.error("Error fetching user:", err.message);
+      res.status(500).json({ error: 'Internal Server Error' });
   }
-
-  const userId = req.session.user.id; // Use ID instead of username
-  const db = new sqlite3.Database('users.db');
-
-  db.get('SELECT username, email, real_name, date_of_birth FROM users WHERE id = ?', [userId], (err, row) => {
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Internal Server Error' });
-    }
-    if (!row) {
-      console.log(`User ID '${userId}' not found in database`);
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    res.json(row);
-  });
-
-  db.close();
 });
 
 // Registration
 app.post('/register', async (req, res) => {
-  const { username, email, real_name, date_of_birth, password } = req.body;
+  try {
+    const { real_name, date_of_birth, username, email, password } = req.body;
 
-  // Check if username or email already exists
-  db.get(`SELECT * FROM users WHERE username = ? OR email = ?`, [username, email], async (err, row) => {
-    if (row) return res.send('Username or email already exists.');
+    // ✅ Ensure all fields exist before trimming
+    if (!username || !email || !password || !real_name || !date_of_birth) {
+      return res.status(400).json({ error: "All fields are required." });
+    }
 
-    const hash = await bcrypt.hash(password, 10);
-    db.run(
-      `INSERT INTO users (username, email, real_name, date_of_birth, password) VALUES (?, ?, ?, ?, ?)`,
-      [username, email, real_name, date_of_birth, hash],
-      function (err) {
-        if (err) return res.send('Error registering user.');
-        res.send('Registration successful. <a href="login.html">Login here</a>');
-      }
+    // ✅ Trim inputs
+    const trimmedUsername = username.trim().toLowerCase();
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = password.trim();
+    const trimmedRealName = real_name.trim();
+
+    // ✅ Validate date format
+    const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dobRegex.test(date_of_birth)) {
+      return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD.' });
+    }
+
+    // ✅ Validate password strength
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!strongPasswordRegex.test(trimmedPassword)) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters, include an uppercase letter, a number, and a special character.' });
+    }
+
+    // ✅ Check for existing user
+    const existingUser = await dbGet(
+      `SELECT id FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)`,
+      [trimmedUsername, trimmedEmail]
     );
-  });
+
+    if (existingUser) {
+      return res.status(400).json({ error: 'Username or email already exists.' });
+    }
+
+    // ✅ Hash the password
+    const hash = await bcrypt.hash(trimmedPassword, 12);
+
+    // ✅ Insert user into database
+    await dbRun(
+      `INSERT INTO users (username, email, real_name, date_of_birth, password, role, status, created_at) 
+       VALUES (?, ?, ?, ?, ?, 'user', 'active', CURRENT_TIMESTAMP)`,
+      [trimmedUsername, trimmedEmail, trimmedRealName, date_of_birth, hash]
+    );
+
+    // ✅ Return JSON response with a redirect
+    res.status(201).json({ message: 'Registration successful.', redirect: 'login.html' });
+
+  } catch (err) {
+    console.error("Registration Error:", err.message);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // Login
-app.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  db.get(`SELECT id, username, password FROM users WHERE username = ?`, [username], async (err, row) => {
-    if (!row || !(await bcrypt.compare(password, row.password))) {
-      return res.status(401).send('Invalid credentials.');
-    }
-    
-    // Store user ID in session
-    req.session.user = { id: row.id, username: row.username };
-    res.redirect('/');
-  });
+app.post('/login', async (req, res) => {
+  try {
+      let { username, password } = req.body;
+
+      // ✅ Ensure all required fields are present
+      if (!username || !password) {
+          return res.status(400).json({ error: "Username and password are required." });
+      }
+
+      username = username.trim();
+      password = password.trim();
+
+      // ✅ Retrieve user by either username or email (case-insensitive)
+      const row = await dbGet(
+          `SELECT id, username, password, role, status FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)`,
+          [username, username.toLowerCase()]
+      );
+
+      // ✅ Prevent user enumeration by using the same response for missing accounts
+      if (!row || !(await bcrypt.compare(password, row.password))) {
+          return res.status(401).json({ error: "Invalid credentials." });
+      }
+
+      // ✅ Prevent revealing if an account is banned/suspended
+      if (row.status !== 'active') {
+          return res.status(401).json({ error: "Invalid credentials." });
+      }
+
+      // ✅ Securely regenerate session before setting user details
+      req.session.regenerate(async (err) => {
+          if (err) {
+              console.error("Session regeneration error:", err.message);
+              return res.status(500).json({ error: "Session error. Try again later." });
+          }
+
+          // ✅ Store only necessary user details in session
+          req.session.user = { id: row.id, username: row.username, role: row.role };
+
+          try {
+              // ✅ Update last login timestamp AFTER session is regenerated
+              await dbRun(`UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?`, [row.id]);
+          } catch (dbErr) {
+              console.error("Database error updating last login:", dbErr.message);
+          }
+
+          if (req.headers["content-type"] === "application/json") {
+            res.json({ message: "Login successful.", redirect: "/" });
+          } else {
+            res.redirect("/");
+          }
+      });
+
+  } catch (err) {
+      console.error("Login Error:", err.message);
+      res.status(500).json({ error: "Internal Server Error. Please try again later." });
+  }
 });
 
 // Logout
@@ -128,57 +255,166 @@ app.get('/logout', (req, res) => {
 });
 
 // Update profile
-app.post('/update-profile', ensureAuthenticated, (req, res) => {
-  const { email, real_name, date_of_birth } = req.body;
-  db.run('UPDATE users SET email = ?, real_name = ?, date_of_birth = ? WHERE username = ?', 
-    [email, real_name, date_of_birth, req.session.user.username], (err) => {
-      if (err) return res.send('Error updating profile.');
-      res.send('Profile updated successfully. <a href="/profile">Go back</a>');
-  });
+app.post('/update-profile', ensureAuthenticated, async (req, res) => {
+  try {
+      console.log("Received update request:", req.body); // ✅ Debugging log
+
+      const { email, real_name, date_of_birth } = req.body;
+      if (!email || !real_name || !date_of_birth) {
+          return res.status(400).json({ error: "All fields are required." }); // ✅ Proper error response
+      }
+
+      const userId = req.session.user.id;
+
+      await dbRun(`UPDATE users SET email = ?, real_name = ?, date_of_birth = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, 
+                 [email, real_name, date_of_birth, userId]);
+
+      res.json({ message: "Profile updated successfully." });
+
+  } catch (err) {
+      console.error("Error updating profile:", err.message);
+      res.status(500).json({ error: "Database error." });
+  }
 });
 
-// Change password
-app.post('/update-password', ensureAuthenticated, async (req, res) => {
-  const { oldPassword, newPassword } = req.body;
-  db.get('SELECT * FROM users WHERE username = ?', [req.session.user.username], async (err, row) => {
-    if (!row || !(await bcrypt.compare(oldPassword, row.password))) {
-      return res.send('Old password is incorrect.');
-    }
-    const hash = await bcrypt.hash(newPassword, 10);
-    db.run('UPDATE users SET password = ? WHERE username = ?', [hash, req.session.user.username], (err) => {
-      if (err) return res.send('Error updating password.');
-      res.send('Password updated. <a href="/profile">Go back</a>');
-    });
-  });
-});
-
-app.post('/save-result', ensureAuthenticated, (req, res) => {
-  const result = req.body.result;
-  const userId = req.user.id; // Ensure `req.user` is populated from authentication
-
-  if (!result) {
-    return res.status(400).json({ error: "Result data is required." });
+// Update account status
+app.post('/update-status', authorize('admin'), (req, res) => {
+  const { username, status } = req.body;
+  if (!['active', 'suspended', 'banned'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
   }
 
-  db.run('INSERT INTO results (user_id, result) VALUES (?, ?)', [userId, result], (err) => {
-    if (err) {
-      console.error("Database Error:", err.message);
-      return res.status(500).json({ error: "Error saving result." });
-    }
-    res.json({ success: true, message: "Result saved successfully." });
+  db.run(`UPDATE users SET status = ? WHERE username = ?`, [status, username], (err) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      res.json({ message: `User ${username} is now ${status}.` });
   });
 });
 
-app.get('/get-results', ensureAuthenticated, (req, res) => {
-  const userId = req.user.id;
+// Generate a password reset
+app.post('/request-password-reset', async (req, res) => {
+  try {
+      const email = req.body.email.trim().toLowerCase(); // Normalize email once before query
 
-  db.all('SELECT id, result, timestamp FROM results WHERE user_id = ?', [userId], (err, rows) => {
-    if (err) {
-      console.error("Database Error:", err.message);
-      return res.status(500).json({ error: "Error retrieving results." });
-    }
-    res.json(rows);
-  });
+      // Check if the email exists in the database
+      const user = await dbGet(`SELECT id FROM users WHERE email = ?`, [email]);
+
+      if (!user) {
+          // Always respond with the same message to prevent email enumeration attacks
+          return res.status(200).json({ message: 'If this email is registered, you will receive reset instructions.' });
+      }
+
+      // Generate a secure reset token
+      const resetToken = crypto.randomBytes(64).toString('hex');
+      const expiresAt = Math.floor(Date.now() / 1000) + 3600; // Token expires in 1 hour
+
+      // Store the reset token securely in the database
+      await dbRun(`UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?`, 
+                  [resetToken, expiresAt, user.id]);
+
+      // TODO: Send the reset token via email (Not implemented here)
+      console.log(`Password reset token for ${email}: ${resetToken}`);
+
+      // Always respond with a generic success message (Prevents email leaks)
+      res.json({ message: 'If this email is registered, you will receive reset instructions.' });
+  } catch (err) {
+      console.error("Password Reset Request Error:", err.message);
+      res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Reset password - forgot
+app.post('/reset-password', async (req, res) => {
+  try {
+      const { resetToken, newPassword } = req.body;
+
+      // ✅ Normalize input (trim whitespace)
+      const normalizedToken = resetToken.trim();
+      const trimmedPassword = newPassword.trim();
+
+      // ✅ Verify the token and check expiration
+      const row = await dbGet(`SELECT id, reset_token_expires FROM users WHERE reset_token = ?`, [normalizedToken]);
+
+      if (!row) {
+          return res.status(400).json({ error: "Invalid or expired reset token." });
+      }
+
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (row.reset_token_expires < currentTime) {
+          return res.status(400).json({ error: "Reset token has expired." });
+      }
+
+      // ✅ Enforce strong password policy
+      const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!strongPasswordRegex.test(trimmedPassword)) {
+          return res.status(400).json({ error: "Password must be at least 8 characters, include an uppercase letter, a number, and a special character." });
+      }
+
+      // ✅ Clear reset token BEFORE updating password to prevent reuse attacks
+      await dbRun(`UPDATE users SET reset_token = NULL, reset_token_expires = NULL WHERE id = ?`, [row.id]);
+
+      // ✅ Hash the new password safely
+      const saltRounds = 12;
+      const hash = await bcrypt.hash(trimmedPassword, saltRounds);
+
+      // ✅ Update password in the database
+      await dbRun(`UPDATE users SET password = ? WHERE id = ?`, [hash, row.id]);
+
+      res.status(200).json({ message: "Password reset successful." });
+
+  } catch (err) {
+      console.error("Password Reset Error:", err.message);
+      res.status(500).json({ error: "Database error." });
+  }
+});
+
+// Update password - logged in
+app.post('/update-password', ensureAuthenticated, async (req, res) => {
+  try {
+      const { oldPassword, newPassword } = req.body;
+      const userId = req.session.user.id;
+
+      // ✅ Trim input to prevent accidental whitespace issues
+      const trimmedOldPassword = oldPassword.trim();
+      const trimmedNewPassword = newPassword.trim();
+
+      // ✅ Fetch the current password hash
+      const row = await dbGet('SELECT password FROM users WHERE id = ?', [userId]);
+
+      if (!row || !(await bcrypt.compare(trimmedOldPassword, row.password))) {
+          return res.status(400).json({ error: 'Old password is incorrect.' });
+      }
+
+      // ✅ Enforce strong password policy
+      const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!strongPasswordRegex.test(trimmedNewPassword)) {
+          return res.status(400).json({ error: 'Password must be at least 8 characters, include an uppercase letter, a number, and a special character.' });
+      }
+
+      // ✅ Hash the new password safely
+      let hash;
+      try {
+          const saltRounds = 12;
+          hash = await bcrypt.hash(trimmedNewPassword, saltRounds);
+      } catch (hashError) {
+          console.error("Hashing Error:", hashError.message);
+          return res.status(500).json({ error: 'Password processing error' });
+      }
+
+      // ✅ Update the password in the database
+      await dbRun('UPDATE users SET password = ? WHERE id = ?', [hash, userId]);
+
+      // ✅ Regenerate session before sending success response
+      req.session.regenerate((err) => {
+          if (err) {
+              console.error('Session regeneration error:', err.message);
+              return res.status(500).json({ error: 'Session error. Please log in again.' });
+          }
+          res.json({ message: 'Password updated successfully. Please log in again.' });
+      });
+  } catch (err) {
+      console.error('Error updating password:', err.message);
+      res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // =======================
@@ -331,6 +567,86 @@ app.get('/get-results', ensureAuthenticated, (req, res) => {
   );
 });
 
-// Start server
+app.post('/save-result', ensureAuthenticated, (req, res) => {
+  const result = req.body.result;
+  const userId = req.session.user.id;
+
+  if (!result) {
+    return res.status(400).json({ error: "Result data is required." });
+  }
+
+  db.run('INSERT INTO results (user_id, result) VALUES (?, ?)', [userId, result], (err) => {
+    if (err) {
+      console.error("Database Error:", err.message);
+      return res.status(500).json({ error: "Error saving result." });
+    }
+    res.json({ success: true, message: "Result saved successfully." });
+  });
+});
+
+// =======================
+// 🔹 ADMIN PANEL API 🔹
+// =======================
+
+app.get('/admin', ensureAuthenticated, authorize('owner'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'private/admin.html'));
+});
+
+function authorizeOwner(req, res, next) {
+  if (!req.session.user || req.session.user.role !== 'owner') {
+      return res.status(403).json({ error: 'Access denied. Owner role required.' });
+  }
+  next();
+}
+
+app.get('/admin/get-users', authorizeOwner, async (req, res) => {
+  try {
+      const users = await new Promise((resolve, reject) => {
+          db.all(`SELECT id, username, email, real_name, date_of_birth, role, status, profile_picture, two_factor_enabled, last_login FROM users`, 
+          [], 
+          (err, rows) => {
+              if (err) reject(err);
+              else resolve(rows);
+          });
+      });
+      
+      res.json(users);
+  } catch (err) {
+      console.error("Error fetching users:", err.message);
+      res.status(500).json({ error: "Database error." });
+  }
+});
+
+app.post('/admin/update-user', authorizeOwner, async (req, res) => {
+  try {
+      const { id, username, email, real_name, date_of_birth, role, status, profile_picture } = req.body;
+
+      await dbRun(
+          `UPDATE users SET username = ?, email = ?, real_name = ?, date_of_birth = ?, role = ?, status = ?, profile_picture = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          [username, email, real_name, date_of_birth, role, status, profile_picture, id]
+      );
+
+      res.json({ message: "User updated successfully!" });
+  } catch (err) {
+      console.error("Error updating user:", err.message);
+      res.status(500).json({ error: "Database error." });
+  }
+});
+
+app.delete('/admin/delete-user', authorizeOwner, async (req, res) => {
+  try {
+      const { id } = req.body;
+      await dbRun(`DELETE FROM users WHERE id = ?`, [id]);
+      res.json({ message: "User deleted successfully!" });
+  } catch (err) {
+      console.error("Error deleting user:", err.message);
+      res.status(500).json({ error: "Database error." });
+  }
+});
+
+// =======================
+// 🔹 START SERVER 🔹
+// =======================
+
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));

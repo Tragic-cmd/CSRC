@@ -149,17 +149,33 @@ input.input-error {
   background-color: var(--primary);
   color: white;
   border: none;
-  padding: 12px 24px;
-  font-size: 1rem;
+  padding: 6px 10px;
+  font-size: 0.875rem;
   border-radius: 6px;
   cursor: pointer;
+  white-space: nowrap; /* Prevents wrapping */
+  display: inline-block; /* Prevents block stretching */
   transition: background-color 0.3s;
   text-decoration: none; /* Removes underline from links */
+  min-width: auto;     /* Remove any unnecessary width constraints */
 }
 
 .button:hover {
   background-color: var(--primary-dark);
   text-decoration: none; /* Ensures hover state doesn't add underline */
+}
+
+/* Differentiate update and delete buttons */
+.update-btn {
+  background-color: var(--primary);
+}
+
+.delete-btn {
+  background-color: var(--danger);
+}
+
+.delete-btn:hover {
+  background-color: #c0392b; /* Darker red on hover */
 }
 
 .result-section {
@@ -264,6 +280,60 @@ ul {
 .dark-mode .sidebar button {
   background-color: #333;
   color: #fff;
+}
+
+/* Ensure the table is responsive */
+.table-container {
+  overflow-x: auto; /* Enables horizontal scrolling if necessary */
+  max-width: 100%; /* Ensures table doesn’t overflow */
+}
+
+/* Improve table structure */
+#usersTable {
+  width: 100%;
+  border-collapse: collapse; /* Remove double borders */
+  table-layout: fixed; /* Prevents columns from resizing unpredictably */
+}
+
+/* Improve table cells */
+#usersTable th, #usersTable td {
+  padding: 8px;
+  text-align: center;
+  border: 1px solid var(--border);
+  white-space: nowrap; /* Prevents text from wrapping inside cells */
+  overflow: hidden;
+  text-overflow: ellipsis; /* Truncates text if it overflows */
+}
+
+
+#usersTable th:last-child, 
+#usersTable td:last-child {
+    min-width: 120px; /* Adjust width to fit both buttons */
+    white-space: nowrap; /* Prevents text from wrapping */
+}
+
+/* Improve input field spacing */
+.input-field {
+  width: 95%;
+  padding: 6px;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+/* Ensure images don’t break layout */
+.profile-pic {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.input-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
 }
 
 /* Ensure the styles.css file is linked */
