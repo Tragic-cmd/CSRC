@@ -1,8 +1,8 @@
-# Camera Server Sizing Tool
+Camera Server Sizing Tool
 
-The **Camera Server Sizing Tool** is a web-based application that helps users calculate the server and storage requirements for IP camera deployments. This tool considers multiple factors such as camera resolution, frame rate, compression codec, storage retention period, and RAID configuration to provide accurate hardware sizing recommendations.
+The Camera Server Sizing Tool is a comprehensive web-based application designed to help users accurately calculate server and storage requirements for IP camera deployments. The tool factors in camera resolution, frame rate, compression codec, storage retention period, and RAID configuration to deliver precise hardware recommendations.
 
-## Table of Contents
+📌 Table of Contents
 
 1. [Installation](https://github.com/Tragic-cmd/CSRC#installation)
        
@@ -11,30 +11,33 @@ The **Camera Server Sizing Tool** is a web-based application that helps users ca
 3. [Features](https://github.com/Tragic-cmd/CSRC#features)
        
 4. [Calculation Methodology](https://github.com/Tragic-cmd/CSRC#calculation-methodology)
+
+5. [Security Considerations](https://github.com/Tragic-cmd/CSRC#Security-Considerations)
+
+6. [Limitations & Margins of Error](https://github.com/Tragic-cmd/CSRC#Limitations-&-Margins-of-Error)
        
-5. [Contributing](https://github.com/Tragic-cmd/CSRC#contributing)
+7. [Contributing](https://github.com/Tragic-cmd/CSRC#contributing)
        
-6. [License](https://github.com/Tragic-cmd/CSRC#license)
+8. [License](https://github.com/Tragic-cmd/CSRC#license)
        
-7. [Contact](https://github.com/Tragic-cmd/CSRC#contact)
-    
+9. [Contact](https://github.com/Tragic-cmd/CSRC#contact)
 
 ## Installation
 
 ### Prerequisites
+
+Before installing, ensure the following dependencies are met:
 
 - Node.js (v16 or later) and npm installed on your system
     
 - A web browser
     
 - Git for cloning the repository
-    
 
 ### Steps to Install
 
-```
-npm init -y npm install express body-parser jsonwebtoken bcrypt
 
+```
 # Clone the repository
 git clone https://github.com/github-username/camera-server-sizer.git
 
@@ -42,52 +45,50 @@ git clone https://github.com/github-username/camera-server-sizer.git
 cd camera-server-sizer
 
 # Install required dependencies
-npm install
+npm install express body-parser jsonwebtoken bcrypt
 
 # Start the server
 npm start
+
 ```
+
+The application will now be accessible at http://localhost:3000.
 
 ## Usage
 
-To use the Camera Server Sizing Tool:
+    Open your browser and navigate to http://localhost:3000.
 
-1. Open your browser and navigate to `http://localhost:3000`.
-    
-2. Enter details such as the number of cameras, resolution, compression codec, and retention period.
-    
-3. Click on the **Calculate Requirements** button.
-    
-4. View detailed results, including storage, RAID configuration, and VM recommendations.
-    
+    Enter details such as number of cameras, resolution, compression codec, and retention period.
 
-### Example Usage
+    Click on "Calculate Requirements" to generate results.
 
-```
-# Start the application
+    View detailed storage, RAID, server, and bandwidth recommendations.
+
+Example Usage
+
 npm start
-```
 
-After starting the server, access the tool through your browser to configure camera settings and receive recommendations.
+Once the server is running, access the tool via your browser, configure camera settings, and receive real-time recommendations.
 
 ## Features
 
 ![Screenshot 2025-03-23 005933](https://github.com/user-attachments/assets/ef421090-19f5-449f-9470-24083b8767f9)
 
-- **User Authentication**: Register, login, and manage profiles securely.
-    
-- **Dynamic Storage Calculation**: Compute storage requirements based on selected parameters.
-    
-- **RAID Configuration Analysis**: Provides optimal RAID configurations.
-    
-- **Server Recommendation**: Estimates the number of servers required.
-    
-- **Dark Mode Support**: User-friendly interface with theme toggling.
-    
-- **Local Data Storage**: Saves previous configurations for quick access.
-    
-- **Performance Optimization Recommendations**: Suggests best practices for resource management.
-    
+    User Authentication: Secure login, registration, and profile management.
+
+    Dynamic Storage Calculation: Estimates storage needs based on selected parameters.
+
+    RAID Configuration Analysis: Suggests optimal RAID configurations for redundancy.
+
+    Server Recommendation: Estimates the number of servers required based on camera load.
+
+    Network Bandwidth Estimation: Ensures adequate network capacity for video streams.
+
+    Performance Optimization Suggestions: Recommends best practices for efficient resource management.
+
+    Dark Mode Support: User-friendly interface with theme toggling.
+
+    Local Data Storage: Saves previous configurations for quick access.
 
 ## Calculation Methodology
 
@@ -125,32 +126,69 @@ The Camera Server Sizing Tool utilizes a set of formulas and pre-defined bitrate
     - **RAM Calculation**: RAM requirements are derived based on the number of concurrent video streams and processing demands.
         
     - **Network Bandwidth**: The required network bandwidth is calculated using the sum of all camera bitrates to ensure sufficient infrastructure capacity.
-        
+
+## Security Considerations
+
+    User Authentication: Secure password hashing with bcrypt.
+
+    JWT-based Authentication: Ensures session integrity and protects against unauthorized access.
+
+    Input Validation: Prevents injection attacks and erroneous calculations.
+
+    Rate Limiting: Mitigates brute-force attacks.
+
+    Data Encryption: Secures sensitive user data.
+
+    ⚠️ Note: Security features rely on proper server configuration and HTTPS enforcement in production.
+
+## Limitations & Margins of Error
+
+    Bitrate Variability: Actual bitrates may fluctuate due to real-world motion levels.
+
+    Codec Efficiency Differences: Compression ratios vary between implementations of H.264, H.265, and MJPEG.
+
+    Storage Overhead: Filesystem and RAID configurations can introduce overhead (usually 5-20%).
+
+    CPU/GPU Acceleration Impact: Hardware acceleration significantly affects CPU load estimation.
+
+    Network Congestion Considerations: Bandwidth estimates assume ideal network conditions.
+
+To minimize error margins, always test with real-world footage and hardware.
 
 ## Contributing
 
-We welcome contributions! Follow these steps:
+We welcome contributions! To contribute:
 
-1. Fork the repository
-    
-2. Create your feature branch: `git checkout -b feature-branch-name`
-    
-3. Commit your changes: `git commit -am 'Add new feature'`
-    
-4. Push to the branch: `git push origin feature-branch-name`
-    
-5. Open a pull request
-    
+    Fork the repository
+
+    Create a new branch:
+
+
+```
+git checkout -b feature-branch-name
+```
+
+Make changes & commit:
+
+```
+git commit -am "Added new feature"
+```
+
+Push to the branch:
+
+```
+git push origin feature-branch-name
+```
+
+Submit a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](https://www.boot.dev/lessons/LICENSE) file for details.
+This project is licensed under the MIT License – see the LICENSE file for details.
 
 ## Contact
 
-For any questions or feedback, reach out to:
+For inquiries or feedback, reach out via:
 
-- Email: codyshouey@outlook.com
-    
-- GitHub Issues: [Submit an Issue](https://github.com/Tragic-cmd/CSRC/issues)
-    
+📧 Email: codyshouey@outlook.com
+🐙 GitHub Issues: Submit an Issue
