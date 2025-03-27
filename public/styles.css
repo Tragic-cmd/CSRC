@@ -1,3 +1,4 @@
+/* Global Variables */
 :root {
   --bg-light: #f5f7f9;
   --bg-dark: #121212;
@@ -11,6 +12,7 @@
   --border: #ddd;
 }
 
+/* Body Styling */
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
@@ -21,11 +23,13 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 
+/* Dark Mode Body Styling */
 body.dark-mode {
   background-color: var(--bg-dark);
   color: var(--text-dark);
 }
 
+/* Container Styling */
 .container {
   max-width: 1200px;
   margin: auto;
@@ -36,10 +40,22 @@ body.dark-mode {
   transition: background-color 0.3s;
 }
 
+/* Dark Mode Container */
 body.dark-mode .container {
   background-color: #1e1e1e;
 }
 
+/* Form Inputs & Textareas Styling */
+input, select, textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Dark Mode Form Inputs & Textareas */
 body.dark-mode input,
 body.dark-mode select,
 body.dark-mode textarea {
@@ -48,15 +64,7 @@ body.dark-mode textarea {
   border: 1px solid #444;
 }
 
-body.dark-mode input::placeholder,
-body.dark-mode textarea::placeholder {
-  color: #aaa;
-}
-
-body.dark-mode select {
-  background-color: #1f1f1f;
-}
-
+/* Focused Inputs & Textareas */
 body.dark-mode input:focus,
 body.dark-mode select:focus,
 body.dark-mode textarea:focus {
@@ -65,6 +73,13 @@ body.dark-mode textarea:focus {
   box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
 }
 
+/* Placeholder Text Styling */
+body.dark-mode input::placeholder,
+body.dark-mode textarea::placeholder {
+  color: #aaa;
+}
+
+/* Result Section Styling */
 body.dark-mode .result-section {
   background-color: #1e2a38;
   border-left: 4px solid var(--primary);
@@ -82,6 +97,7 @@ body.dark-mode .result-grid {
   color: #e0e0e0;
 }
 
+/* Note & Warning Styling */
 body.dark-mode .note {
   background-color: #2a2a1f;
   border-left-color: var(--accent);
@@ -94,11 +110,13 @@ body.dark-mode .warning-message {
   color: #f8d7da;
 }
 
+/* Headings Styling */
 h1, h2, h3, h4 {
   color: inherit;
   margin-top: 1em;
 }
 
+/* Buttons Styling */
 .toggle-theme, .profile-btn, .logout-btn {
   background-color: var(--primary);
   color: white;
@@ -109,10 +127,12 @@ h1, h2, h3, h4 {
   transition: background-color 0.3s;
 }
 
+/* Button Hover State */
 .toggle-theme:hover, .profile-btn:hover, .logout-btn:hover {
   background-color: var(--primary-dark);
 }
 
+/* Form Section & Group Styling */
 .form-section {
   margin-bottom: 32px;
 }
@@ -127,15 +147,7 @@ label {
   font-weight: 600;
 }
 
-input, select {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: background-color 0.3s, color 0.3s;
-}
-
+/* Validation Styling */
 input.input-error {
   border-color: var(--danger);
 }
@@ -145,6 +157,7 @@ input.input-error {
   font-size: 0.875rem;
 }
 
+/* General Button Styling */
 .button {
   background-color: var(--primary);
   color: white;
@@ -153,19 +166,18 @@ input.input-error {
   font-size: 0.875rem;
   border-radius: 6px;
   cursor: pointer;
-  white-space: nowrap; /* Prevents wrapping */
-  display: inline-block; /* Prevents block stretching */
+  white-space: nowrap;
+  display: inline-block;
   transition: background-color 0.3s;
-  text-decoration: none; /* Removes underline from links */
-  min-width: auto;     /* Remove any unnecessary width constraints */
+  text-decoration: none;
 }
 
 .button:hover {
   background-color: var(--primary-dark);
-  text-decoration: none; /* Ensures hover state doesn't add underline */
+  text-decoration: none;
 }
 
-/* Differentiate update and delete buttons */
+/* Specific Button Styles */
 .update-btn {
   background-color: var(--primary);
 }
@@ -175,9 +187,10 @@ input.input-error {
 }
 
 .delete-btn:hover {
-  background-color: #c0392b; /* Darker red on hover */
+  background-color: #c0392b;
 }
 
+/* Result Section Styling */
 .result-section {
   margin-top: 40px;
   padding: 16px;
@@ -186,6 +199,7 @@ input.input-error {
   border-radius: 6px;
 }
 
+/* Result Grid Styling */
 .result-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -197,6 +211,7 @@ input.input-error {
   font-weight: 600;
 }
 
+/* Note & Warning Messages */
 .note, .warning-message {
   margin: 16px 0;
   padding: 16px;
@@ -213,15 +228,12 @@ input.input-error {
   border-left: 4px solid var(--warning);
 }
 
-ul {
-  padding-left: 20px;
-}
-
+/* Sidebar Styling */
 .sidebar {
   position: fixed;
   top: 0;
   left: 0;
-  height: 100vh; /* Full height */
+  height: 100vh;
   width: 250px;
   background-color: #f4f4f4;
   border-right: 1px solid #ccc;
@@ -238,15 +250,14 @@ ul {
   transform: translateX(-100%);
 }
 
-/* Enable scrolling inside the sidebar */
+/* Enable Sidebar Scrolling */
 #sidebar-configurations {
-  flex-grow: 1; /* Takes up remaining space */
-  overflow-y: auto; /* Enables scrolling */
-  padding-right: 5px; /* Prevents content from hiding under scrollbar */
-  max-height: calc(100vh - 60px); /* Adjust height based on available space */
+  flex-grow: 1;
+  overflow-y: auto;
+  padding-right: 5px;
+  max-height: calc(100vh - 60px);
 }
 
-/* Ensure sidebar buttons fit within the sidebar */
 .sidebar button {
   display: block;
   width: 100%;
@@ -270,7 +281,7 @@ ul {
   padding: 20px;
 }
 
-/* Dark mode styles */
+/* Dark Mode Sidebar Styling */
 .dark-mode .sidebar {
   background-color: #1e1e1e;
   color: #ffffff;
@@ -282,46 +293,70 @@ ul {
   color: #fff;
 }
 
-/* Ensure the table is responsive */
+/* Responsive Table Styling */
 .table-container {
-  overflow-x: auto; /* Enables horizontal scrolling if necessary */
-  max-width: 100%; /* Ensures table doesn’t overflow */
+  overflow-x: auto;
+  max-width: 100%;
 }
 
-/* Improve table structure */
 #usersTable {
   width: 100%;
-  border-collapse: collapse; /* Remove double borders */
-  table-layout: fixed; /* Prevents columns from resizing unpredictably */
+  border-collapse: collapse;
+  table-layout: fixed;
 }
 
-/* Improve table cells */
 #usersTable th, #usersTable td {
   padding: 8px;
   text-align: center;
   border: 1px solid var(--border);
-  white-space: nowrap; /* Prevents text from wrapping inside cells */
+  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; /* Truncates text if it overflows */
+  text-overflow: ellipsis;
 }
 
-
+/* Table Column Sizing */
 #usersTable th:last-child, 
 #usersTable td:last-child {
-    min-width: 120px; /* Adjust width to fit both buttons */
-    white-space: nowrap; /* Prevents text from wrapping */
+  min-width: 120px;
+  white-space: nowrap;
 }
 
-/* Improve input field spacing */
-.input-field {
-  width: 95%;
-  padding: 6px;
-  font-size: 0.9rem;
-  box-sizing: border-box;
-  text-align: center;
+#usersTable td {
+  position: relative;
 }
 
-/* Ensure images don’t break layout */
+/* Tooltip on Hover */
+#usersTable td:hover::after {
+  content: attr(data-fulltext); /* Tooltip text from data attribute */
+  position: absolute;
+  background: #333; /* Dark background */
+  color: #fff; /* White text color */
+  padding: 8px;
+  font-size: 12px;
+  white-space: nowrap; /* Prevents wrapping */
+  border-radius: 5px;
+  top: 100%; /* Position it below the cell */
+  left: 50%;
+  transform: translateX(-50%); /* Center it horizontally */
+  z-index: 1000; /* Make sure it appears above other content */
+  min-width: 150px; /* Ensure tooltip has enough space */
+  max-width: 300px; /* Limit the width of the tooltip */
+  word-wrap: break-word; /* Allows longer text to wrap */
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.3); /* Adds shadow for visibility */
+  opacity: 1; /* Ensure the tooltip is fully visible */
+  visibility: visible; /* Ensure the tooltip is not hidden */
+}
+
+/* Table Cells Styling */
+#usersTable td {
+  position: relative; /* Ensures positioning for tooltip */
+}
+
+#usersTable td:hover {
+  cursor: pointer; /* Optional: Make sure the cursor indicates interactivity */
+}
+
+/* Profile Image Styling */
 .profile-pic {
   width: 40px;
   height: 40px;
@@ -334,6 +369,15 @@ ul {
   justify-content: center;
   align-items: center;
   width: 100%;
+}
+
+/* Input Field Styling */
+.input-field {
+  width: 95%;
+  padding: 6px;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+  text-align: center;
 }
 
 /* Ensure the styles.css file is linked */

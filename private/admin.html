@@ -12,7 +12,7 @@
         <!-- Header with Dark Mode Toggle -->
         <div class="header">
             <h2>Admin Panel - User Management</h2>
-            <button class="toggle-theme" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+            <button class="toggle-theme">Toggle Dark Mode</button>
         </div>
 
         <!-- User Management Table -->
@@ -21,6 +21,9 @@
                 <thead>
                     <tr>
                         <th>ID</th>
+                        <th>Created</th>
+                        <th>Updated</th>
+                        <th>Last Login</th>
                         <th>Username</th>
                         <th>Email</th>
                         <th>Full Name</th>
@@ -28,7 +31,8 @@
                         <th>Role</th>
                         <th>Status</th>
                         <th>Profile Picture</th>
-                        <th>Actions</th>
+                        <th>Update</th>
+                        <th>Delete</th> 
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -50,8 +54,11 @@
             // ✅ Ensure dark mode button exists and attaches event
             const themeButton = document.querySelector(".toggle-theme");
             if (themeButton) {
+                console.log("Dark mode toggle button found!"); // Debugging
                 themeButton.addEventListener("click", toggleDarkMode);
-            }
+            } else {
+            console.error("Dark mode toggle button NOT found!"); // Debugging
+        }
 
             fetchUsers();
         });
@@ -73,35 +80,38 @@
                     users.forEach(user => {
                         tableBody.innerHTML += `
                             <tr>
-                                <td>${user.id}</td>
-                                <td>
+                                <td data-fulltext="${user.id}">${user.id}</td>
+                                <td data-fulltext="${user.created_at}">${user.created_at}</td>
+                                <td data-fulltext="${user.updated_at}">${user.updated_at}</td>
+                                <td data-fulltext="${user.last_login}">${user.last_login}</td>
+                                <td data-fulltext="${user.username}">
                                     <div class="input-wrapper">
                                         <input type="text" value="${user.username}" id="username-${user.id}" class="input-field">
                                     </div>
                                 </td>
-                                <td>
+                                <td data-fulltext="${user.email}">
                                     <div class="input-wrapper">
                                         <input type="email" value="${user.email}" id="email-${user.id}" class="input-field">
                                     </div>
                                 </td>
-                                <td>
+                                <td data-fulltext="${user.real_name}">
                                     <div class="input-wrapper">
                                         <input type="text" value="${user.real_name}" id="real_name-${user.id}" class="input-field">
                                     </div>
                                 </td>
-                                <td>
+                                <td data-fulltext="${user.date_of_birth}">
                                     <div class="input-wrapper">
                                         <input type="date" value="${user.date_of_birth}" id="date_of_birth-${user.id}" class="input-field">
                                     </div>
                                 </td>
-                                <td>
+                                <td data-fulltext="${user.role}">
                                     <select id="role-${user.id}" class="input-field">
                                         <option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option>
                                         <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
                                         <option value="owner" ${user.role === 'owner' ? 'selected' : ''}>Owner</option>
                                     </select>
                                 </td>
-                                <td>
+                                <td data-fulltext="${user.status}">
                                     <select id="status-${user.id}" class="input-field">
                                         <option value="active" ${user.status === 'active' ? 'selected' : ''}>Active</option>
                                         <option value="suspended" ${user.status === 'suspended' ? 'selected' : ''}>Suspended</option>
@@ -113,6 +123,8 @@
                                 </td>
                                 <td>
                                     <button class="button update-btn" onclick="updateUser(${user.id})">Update</button>
+                                </td>
+                                <td>
                                     <button class="button delete-btn" onclick="deleteUser(${user.id})">Delete</button>
                                 </td>
                             </tr>
