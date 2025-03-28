@@ -9,8 +9,9 @@
 </head>
 <body>
   <div class="container">
-    <div style="display: flex; justify-content: space-between; gap: 10px;">
+    <div style="display: flex; justify-content: flex-end; gap: 10px;">
       <button class="toggle-theme" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+      <a href="/admin.html" id="adminButton" class="button" style="display: none;">Admin Panel</a>
       <a href="/" class="button">Camera Sizing Tool</a>
     </div>
 
@@ -97,6 +98,14 @@
           document.getElementById("email").value = data.email;
           document.getElementById("real_name").value = data.real_name;
           document.getElementById("date_of_birth").value = data.date_of_birth;
+          
+          // Show Admin Panel button if user is an Owner
+          if (data.role === "owner") {
+            console.log("Owner detected - Showing admin button");
+            document.getElementById("adminButton").style.display = "inline-block";
+          } else {
+            console.log("Not an owner - Admin button hidden");
+          }
         })
         .catch(error => {
           console.error('Error fetching user data:', error);

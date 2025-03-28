@@ -112,6 +112,13 @@ app.get('/camera-server-sizer.js', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'private/camera-server-sizer.js'));
 });
 
+app.get('/admin.html', ensureAuthenticated, (req, res) => {
+  if (req.session.user.role.toLowerCase() !== 'owner') {
+      return res.status(403).send('Access denied');
+  }
+  res.sendFile(path.join(__dirname, 'private/admin.html'));
+});
+
 // Fetch authenticated user data
 app.get('/get-user', async (req, res) => {
   try {
@@ -119,12 +126,16 @@ app.get('/get-user', async (req, res) => {
           return res.status(401).json({ error: 'User not authenticated' });
       }
 
+      console.log("Session Data:", req.session.user);  // Debugging line
+
       const userId = req.session.user.id;
       const row = await dbGet(`SELECT username, email, real_name, date_of_birth, role, status, profile_picture, two_factor_enabled, last_login 
                                FROM users WHERE id = ?`, 
                               [userId]);
 
       if (!row) return res.status(404).json({ error: 'User not found' });
+
+      console.log("Fetched User Data:", row);  // Debugging line
 
       res.json(row);
   } catch (err) {
@@ -602,7 +613,9 @@ function authorizeOwner(req, res, next) {
 app.get('/admin/get-users', authorizeOwner, async (req, res) => {
   try {
       const users = await new Promise((resolve, reject) => {
-          db.all(`SELECT id, username, email, real_name, date_of_birth, role, status, profile_picture, two_factor_enabled, last_login FROM users`, 
+          db.all(`SELECT id, username, email, real_name, date_of_birth, role, status, profile_picture, 
+                  two_factor_enabled, last_login, created_at, updated_at 
+                  FROM users`, 
           [], 
           (err, rows) => {
               if (err) reject(err);

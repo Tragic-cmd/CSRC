@@ -9,10 +9,13 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header with Dark Mode Toggle -->
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button class="toggle-theme">Toggle Dark Mode</button>
+            <a href="/" class="button">Camera Sizing Tool</a>
+            <button class="profile-btn" onclick="window.location.href='/profile'">Profile</button>
+        </div>
         <div class="header">
             <h2>Admin Panel - User Management</h2>
-            <button class="toggle-theme">Toggle Dark Mode</button>
         </div>
 
         <!-- User Management Table -->
@@ -74,6 +77,7 @@
             fetch('/admin/get-users')
                 .then(response => response.json())
                 .then(users => {
+                    console.log(users); // Log user data
                     const tableBody = document.querySelector("#usersTable tbody");
                     tableBody.innerHTML = "";
 
