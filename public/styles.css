@@ -303,11 +303,12 @@ input.input-error {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  margin-bottom: 1rem; /* Add space below the table */
 }
 
 #usersTable th, #usersTable td {
-  padding: 8px;
-  text-align: center;
+  padding: 10px; /* Increase padding for better readability */
+  text-align: left; /* Align text to the left for easier reading */
   border: 1px solid var(--border);
   white-space: nowrap;
   overflow: hidden;
@@ -325,26 +326,90 @@ input.input-error {
   position: relative;
 }
 
+/* Add visual cues for sorting (optional) */
+#usersTable th.sortable {
+  cursor: pointer;
+  position: relative;
+}
+
+#usersTable th.sortable::after {
+  content: ' ▼';
+  font-size: 0.75rem;
+  position: absolute;
+  right: 8px;
+}
+
+#usersTable th.sortable.sorted-asc::after {
+  content: ' ▲';
+}
+
+#usersTable th.sortable.sorted-desc::after {
+  content: ' ▼';
+}
+
+/* Responsive Adjustments for Smaller Screens */
+@media (max-width: 768px) {
+  /* Stack table rows vertically for small screens */
+  #usersTable, #usersTable th, #usersTable td {
+    display: block;
+    width: 100%;
+  }
+
+  #usersTable th {
+    text-align: left;
+    background-color: #f4f4f4; /* Light background for headers */
+  }
+
+  #usersTable td {
+    text-align: left;
+    border: none;
+    padding-left: 50%; /* Indent for better readability */
+    position: relative;
+  }
+
+  /* Add a pseudo element to label each cell on mobile */
+  #usersTable td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    display: block;
+  }
+
+  /* Remove the last-column behavior for smaller screens */
+  #usersTable th:last-child, 
+  #usersTable td:last-child {
+    min-width: auto;
+  }
+}
+
 /* Tooltip on Hover */
 #usersTable td:hover::after {
-  content: attr(data-fulltext); /* Tooltip text from data attribute */
+  content: attr(data-fulltext);
   position: absolute;
-  background: #333; /* Dark background */
-  color: #fff; /* White text color */
+  background: #333;
+  color: #fff;
   padding: 8px;
   font-size: 12px;
-  white-space: nowrap; /* Prevents wrapping */
+  white-space: nowrap;
   border-radius: 5px;
-  top: 100%; /* Position it below the cell */
+  top: 100%;
   left: 50%;
-  transform: translateX(-50%); /* Center it horizontally */
-  z-index: 1000; /* Make sure it appears above other content */
-  min-width: 150px; /* Ensure tooltip has enough space */
-  max-width: 300px; /* Limit the width of the tooltip */
-  word-wrap: break-word; /* Allows longer text to wrap */
-  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.3); /* Adds shadow for visibility */
-  opacity: 1; /* Ensure the tooltip is fully visible */
-  visibility: visible; /* Ensure the tooltip is not hidden */
+  transform: translateX(-50%);
+  z-index: 1000;
+  min-width: 150px;
+  max-width: 300px;
+  word-wrap: break-word;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.3);
+  opacity: 0; /* Make initially invisible */
+  visibility: hidden; /* Make initially hidden */
+  transition: opacity 0.3s ease, visibility 0.3s ease; /* Add transition for smooth appearance */
+}
+
+#usersTable td:hover::after {
+  opacity: 1; /* Show tooltip */
+  visibility: visible; /* Make tooltip visible */
 }
 
 /* Table Cells Styling */

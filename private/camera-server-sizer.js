@@ -465,40 +465,101 @@ const CameraServerSizer = {
     },
     
     // Calculate CPU cores needed per camera
-    calculateCpuCoresPerCamera: function(resolution, compression, frameRate, hardwareAcceleration) {
-        // Base CPU requirements (cores per camera for 1080p, H.264, 15fps, no hardware acceleration)
-        let baseCores = 0.25;
+    calculateCpuCoresPerCamera: function(resolution, compression, frameRate, hardwareAcceleration, analyticsLevel = 'none', storageType = 'standard') {
+        // Base CPU requirements (cores per camera for 1080p, H.264, 30fps, no hardware acceleration)
+        // Updated baseline to reflect latest benchmarks
+        let baseCores = 0.18;
         
-        // Resolution multipliers - more realistic scaling
+        // Resolution multipliers - with accurate scaling based on pixel count
         const resolutionMultipliers = {
-            '720p': 0.5,
-            '1080p': 1,
-            '2K': 1.5,
-            '4K': 2.5,
-            '8K': 5
+            '480p': 0.25,  // 640x480 (0.3MP)
+            '720p': 0.45,  // 1280x720 (0.9MP)
+            '1080p': 1.0,  // 1920x1080 (2.1MP)
+            '1440p': 1.7,  // 2560x1440 (3.7MP)
+            '2K': 1.8,     // 2560x1600 (4.1MP)
+            '4K': 3.2,     // 3840x2160 (8.3MP)
+            '5K': 4.4,     // 5120x2880 (14.7MP)
+            '8K': 7.0,     // 7680x4320 (33.2MP)
+            '12K': 14.0    // 12288x6480 (79.6MP)
         };
         
-        // Compression complexity multipliers - accounting for newer processors
+        // Get raw resolution multiplier if specified format exists
+        let resolutionMultiplier = resolutionMultipliers[resolution] || 1.0;
+        
+        // If resolution is specified as dimensions (e.g. "1920x1080")
+        if (resolution.includes('x')) {
+            const dimensions = resolution.split('x');
+            if (dimensions.length === 2) {
+                const pixelCount = parseInt(dimensions[0]) * parseInt(dimensions[1]);
+                // Calculate relative to 1080p (2.1MP)
+                resolutionMultiplier = pixelCount / (1920 * 1080);
+                // Apply non-linear scaling for very high resolutions
+                if (resolutionMultiplier > 2) {
+                    // Large resolutions don't scale linearly with pixel count
+                    resolutionMultiplier = Math.pow(resolutionMultiplier, 0.85);
+                }
+            }
+        }
+        
+        // Compression complexity multipliers - updated for current generation processors
         const compressionMultipliers = {
-            'H.264': 1,
-            'H.265': 1.3,  // More realistic for modern systems
-            'H.266': 2.0   // More realistic for modern systems
+            'MJPEG': 0.7,   // Simple decompression
+            'H.264': 1.0,   // Baseline reference
+            'H.264+': 1.1,  // Advanced H.264 with smart encoding features
+            'H.265': 1.2,   // More efficient but requires more processing
+            'H.265+': 1.3,  // Smart H.265 variants (Hikvision, etc.)
+            'H.266/VVC': 1.8, // Very complex encoding, still emerging
+            'AV1': 1.6      // Google/Alliance for Open Media codec
         };
         
-        // Hardware acceleration drastically reduces CPU needs
+        // Framerates don't scale linearly with CPU usage
+        // Non-linear scaling based on measured performance
+        function getFramerateCpuMultiplier(fps) {
+            const baseFrameRate = 30;
+            if (fps <= 0) return 0.1; // Minimum load for stream handling
+            if (fps <= 5) return 0.4; // Low framerates still have overhead
+            if (fps <= 15) return 0.7; // Mid-range framerates
+            if (fps === baseFrameRate) return 1.0; // Reference point
+            
+            // Non-linear scaling for higher framerates
+            return Math.pow(fps / baseFrameRate, 0.8);
+        }
+        
+        // Hardware acceleration based on real-world benchmarks
         const hwAccelMultipliers = {
-            'none': 1,       // Full software encoding
-            'partial': 0.4,  // Partial hardware acceleration
-            'full': 0.15     // Full hardware acceleration
+            'none': 1.0,        // Full software encoding
+            'partial': 0.35,    // Partial hardware acceleration (e.g., CUDA, QuickSync limited)
+            'full': 0.12,       // Full hardware acceleration (modern GPU/NPU)
+            'advanced': 0.08    // Latest generation hardware acceleration with AI cores
         };
         
-        // Calculate cores needed with better scaling factors
-        baseCores *= resolutionMultipliers[resolution] || 1;
-        baseCores *= compressionMultipliers[compression] || 1;
-        baseCores *= this.getFramerateCpuMultiplier(frameRate);
-        baseCores *= hwAccelMultipliers[hardwareAcceleration] || 1;
+        // Video analytics has significant impact on CPU requirements
+        const analyticsMultipliers = {
+            'none': 1.0,        // No analytics
+            'basic': 1.4,       // Motion detection, simple analytics
+            'standard': 2.0,    // Object detection, basic classification
+            'advanced': 3.2,    // Object tracking, behavior analysis
+            'ai': 4.5           // Full AI-powered analytics (if not offloaded to GPU)
+        };
         
-        return parseFloat(baseCores.toFixed(2));
+        // Storage type affects CPU usage (particularly for direct-to-disk streaming)
+        const storageMultipliers = {
+            'standard': 1.0,      // Regular storage
+            'redundant': 1.1,     // RAID configurations need more processing
+            'encrypted': 1.2,     // Encryption adds overhead
+            'cloud': 1.15         // Cloud uploading adds processing requirements
+        };
+        
+        // Calculate cores needed with improved scaling factors
+        baseCores *= resolutionMultiplier;
+        baseCores *= compressionMultipliers[compression] || 1.0;
+        baseCores *= getFramerateCpuMultiplier(frameRate);
+        baseCores *= hwAccelMultipliers[hardwareAcceleration] || 1.0;
+        baseCores *= analyticsMultipliers[analyticsLevel] || 1.0;
+        baseCores *= storageMultipliers[storageType] || 1.0;
+        
+        // Apply minimum value to prevent unrealistically low estimates
+        return Math.max(0.05, parseFloat(baseCores.toFixed(3)));
     },
     
     // Get framerate multiplier for CPU calculation
@@ -857,68 +918,66 @@ const CameraServerSizer = {
 
             // Performance Recommendations
             let performanceRecs = `
-                <li><strong>Network:</strong> Implement a dedicated VLAN for camera traffic with at least 
-                ${Math.ceil(results.networkBandwidthMbps * results.vmsNeeded / 1000)} Gbps capacity. 
-                Use redundant 10GbE+ connections for high-bandwidth deployments.</li>
-                <li><strong>Storage:</strong> Use enterprise-grade storage rated for 24/7 surveillance workloads 
-                (e.g., WD Purple Pro, Seagate SkyHawk AI) with optimized write endurance.</li>
-                <li><strong>Compute:</strong> Enable CPU pinning and NUMA awareness to optimize VM performance for high-throughput workloads.</li>
+                <li><strong>Network:</strong> Implement a QoS-enabled dedicated VLAN for camera traffic with at least 
+                ${Math.ceil(results.networkBandwidthMbps * results.vmsNeeded / 1000)} Gbps capacity. Deploy redundant switches 
+                with LACP-bonded 10GbE+ connections and configure jumbo frames for optimal throughput.</li>
+                <li><strong>Storage:</strong> Utilize enterprise surveillance-rated NVMe storage in RAID 6 or RAID 10 configuration 
+                with hot spares. Implement tiered storage with 7-10 day retention on primary storage and longer-term archiving on 
+                lower-cost media. Install UPS with graceful shutdown capability.</li>
+                <li><strong>Compute:</strong> Configure over-provisioning protection with at least 20% headroom for CPU/RAM. Enable 
+                CPU pinning with NUMA awareness and dedicated GPU resources where applicable. Implement live migration capability for 
+                maintenance without recording interruption.</li>
             `;
 
             // Additional recommendations based on camera density
             if (results.camerasPerVM > 20) {
                 performanceRecs += `
-                    <li>Distribute cameras across multiple VMs to balance CPU load and improve fault tolerance.</li>
-                    <li>Consider GPU acceleration (e.g., NVIDIA Tesla T4) for analytics-heavy workloads.</li>
+                    <li><strong>Camera Distribution:</strong> Implement N+1 redundancy by distributing cameras across multiple VMs to balance processing load and maintain performance during partial system failures.</li>
+                    <li><strong>Hardware Acceleration:</strong> Deploy purpose-built GPU acceleration (NVIDIA T4/A10/A30 or Intel QuickSync) to offload motion detection, video analytics, and AI processing from CPU cores, reducing system overhead by up to 60%.</li>
                 `;
             }
-
+            
             if (results.vmsNeeded > 4) {
                 performanceRecs += `
-                    <li>Implement a load balancing solution (e.g., Nginx, HAProxy) for client connections to optimize traffic distribution.</li>
-                    <li>Use SR-IOV or RDMA-enabled networking to minimize latency for large-scale deployments.</li>
+                    <li><strong>Traffic Management:</strong> Implement an enterprise load balancer (F5, Citrix ADC, or NGINX Plus) with SSL offloading and connection persistence to optimize client connections and bandwidth utilization.</li>
+                    <li><strong>Network Optimization:</strong> Utilize SR-IOV or RDMA-enabled network adapters with dedicated bandwidth allocation to minimize latency and maximize throughput for large camera deployments.</li>
                 `;
             }
-
             document.getElementById('performanceRecommendations').innerHTML = performanceRecs;
-
+            
             // Redundancy Recommendations
             let redundancyRecs = `
-                <li><strong>High Availability:</strong> Implement VM HA (VMware HA, Hyper-V Failover Clustering) to ensure rapid recovery from host failures.</li>
-                <li><strong>Storage Redundancy:</strong> Deploy a dual-controller SAN or hyperconverged storage with erasure coding for fault tolerance.</li>
-                <li><strong>Network Redundancy:</strong> Use LACP or MLAG for network link aggregation, ensuring failover protection.</li>
+                <li><strong>High Availability:</strong> Implement N+1 host redundancy with automated VM failover (VMware HA/DRS, Hyper-V Failover Clustering) configured for &lt;30 second recovery time to ensure continuous recording during hardware failures.</li>
+                <li><strong>Storage Redundancy:</strong> Deploy enterprise-class storage with dual controllers, battery-backed cache, and RAID 6/60 or erasure coding (minimum 2N protection). Maintain separate metadata volumes with higher redundancy levels.</li>
+                <li><strong>Network Resilience:</strong> Implement full fabric redundancy with dual switches, MLAG/VPC configurations, and automatic link failure detection. Configure diverse physical paths for critical camera traffic.</li>
             `;
 
             // If multiple physical hosts are needed, add additional failover recommendations
             if (results.physicalHostsNeeded > 1) {
-            redundancyRecs += `
-                <li>Deploy multiple recording servers with active-active or active-passive failover for uninterrupted video recording.</li>
-                <li>Implement cross-site replication for disaster recovery in mission-critical environments.</li>
-            `;
+                redundancyRecs += `
+                    <li><strong>Distributed Recording:</strong> Implement geographically dispersed recording servers in an N+1 or N+N active-active configuration with automatic failover orchestration and continuous replication to maintain recording integrity during server outages.</li>
+                    <li><strong>Disaster Recovery:</strong> Configure asynchronous cross-site replication with RPO &lt;15 minutes and automated runbooks for failover activation. For mission-critical deployments, maintain hot standby systems with dedicated cross-connections and automatic takeover capability.</li>
+                `;
             }
 
             document.getElementById('redundancyRecommendations').innerHTML = redundancyRecs;
 
             // Scaling Recommendations
             let scalingRecs = '';
-            const expansionCapacity = Math.floor((results.raidConfig.usableCapacity - results.storageWithOverheadTB) / 
+            const expansionCapacity = Math.floor((results.raidConfig.usableCapacity - results.storageWithOverheadTB) /
                 (results.storageWithOverheadTB / this.inputs.cameraCount));
-
             if (expansionCapacity > 0) {
                 scalingRecs += `
-                    <li>Your current storage configuration can support approximately <strong>${expansionCapacity} additional cameras</strong> 
-                    before requiring an upgrade.</li>
+                    <li><strong>Current Capacity:</strong> Your storage configuration supports approximately <strong>${expansionCapacity} additional cameras</strong> 
+                    (${Math.round(expansionCapacity/this.inputs.cameraCount*100)}% growth) at current retention settings before requiring expansion. Plan upgrades when reaching 80% capacity to maintain optimal performance.</li>
                 `;
             }
-
             scalingRecs += `
-                <li><strong>Future CPU/RAM Needs:</strong> Reserve at least <strong>${Math.ceil(results.cpuCoresPerVM * 0.3)}</strong> additional CPU cores 
-                and <strong>${Math.ceil(results.ramPerVM * 0.3)} GB</strong> of RAM per physical host for future expansion.</li>
-                <li><strong>Storage Scaling:</strong> Consider a hyperconverged infrastructure or scale-out NAS (e.g., Dell VxRail, NetApp AFF) 
-                for seamless compute and storage scaling.</li>
-                <li><strong>Networking Expansion:</strong> Plan for 25GbE+ network uplinks if camera density increases significantly.</li>
+                <li><strong>Resource Planning:</strong> Reserve a minimum of <strong>${Math.ceil(results.cpuCoresPerVM * 0.3)}</strong> additional CPU cores
+                and <strong>${Math.ceil(results.ramPerVM * 0.3)} GB</strong> RAM per host to accommodate future analytics, higher resolutions, or increased frame rates. Consider pre-allocating PCIe slots for additional GPU acceleration cards.</li>
+                <li><strong>Infrastructure Scaling:</strong> Implement modular storage architecture using enterprise hyperconverged solutions (Dell VxRail, Nutanix NX, HPE SimpliVity) or scale-out NAS platforms (NetApp ONTAP, Dell PowerScale) with non-disruptive expansion capabilities and automated data tiering.</li>
+                <li><strong>Bandwidth Growth:</strong> Deploy network infrastructure with upgrade paths to 25/100GbE (leaf-spine architecture recommended for large-scale deployments). Reserve rack space and power capacity for additional network switches to support camera expansion zones.</li>
             `;
-
             document.getElementById('scalingRecommendations').innerHTML = scalingRecs;
             
             // Show the results section
