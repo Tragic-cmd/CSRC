@@ -7,7 +7,7 @@ const path = require('path');
 
 const app = express();
 const db = new sqlite3.Database('./users.db');
-
+console.log("Connected to DB at:", path.resolve('./users.db'));
 // Wrap db.get() and db.run() inside Promise-based functions
 function dbGet(query, params = []) {
   return new Promise((resolve, reject) => {
@@ -462,7 +462,7 @@ db.run(
     siteName TEXT NOT NULL,
     cameraCount INTEGER NOT NULL,
     retentionDays INTEGER NOT NULL,
-    totalStorage REAL NOT NULL,
+    configJson TEXT NOT NULL,  -- Store entire form config as JSON
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   )`,
@@ -481,12 +481,21 @@ db.run(
 
 // Save configuration
 app.post('/save-configuration', ensureAuthenticated, (req, res) => {
-  const { siteName, cameraCount, retentionDays, totalStorage } = req.body;
+  const { siteName, cameraCount, retentionDays } = req.body;
+  
+  // Validate input
+  if (!siteName || !cameraCount || !retentionDays) {
+    return res.status(400).json({ error: "Missing required fields." });
+  }
+
+  const configJson = JSON.stringify(req.body); // Save full config
+  console.log("Saving config for user:", req.session.user?.id);
+  console.log("Received config:", req.body);
 
   db.run(
-    `INSERT INTO configurations (user_id, siteName, cameraCount, retentionDays, totalStorage) 
+    `INSERT INTO configurations (user_id, siteName, cameraCount, retentionDays, configJson) 
      VALUES (?, ?, ?, ?, ?)`,
-    [req.session.user.id, siteName, cameraCount, retentionDays, totalStorage],
+    [req.session.user.id, siteName, cameraCount, retentionDays, configJson],
     function (err) {
       if (err) {
         console.error("Database Error: Failed to save configuration.", err.message);
@@ -500,7 +509,7 @@ app.post('/save-configuration', ensureAuthenticated, (req, res) => {
 // Get saved configurations
 app.get('/get-configurations', ensureAuthenticated, (req, res) => {
   db.all(
-    `SELECT id, siteName, cameraCount, retentionDays, totalStorage, timestamp 
+    `SELECT id, siteName, cameraCount, retentionDays, timestamp 
      FROM configurations WHERE user_id = ? ORDER BY timestamp DESC`,
     [req.session.user.id],
     (err, rows) => {
@@ -511,6 +520,7 @@ app.get('/get-configurations', ensureAuthenticated, (req, res) => {
       if (!rows.length) {
         return res.status(404).json({ message: "No configurations found." });
       }
+      console.log("Configurations retrieved:", rows); // Add this log to see the retrieved data
       res.json({ success: true, configurations: rows });
     }
   );
@@ -518,10 +528,12 @@ app.get('/get-configurations', ensureAuthenticated, (req, res) => {
 
 // Load a specific configuration
 app.get('/load-configuration', ensureAuthenticated, (req, res) => {
-  const configId = req.query.id;
+  const configId = req.query.id; // Ensure this is being passed correctly in the query string
+
+  console.log("Fetching configuration with ID:", configId); // Debug log to check the ID
 
   db.get(
-    `SELECT * FROM configurations WHERE id = ? AND user_id = ?`,
+    `SELECT configJson FROM configurations WHERE id = ? AND user_id = ?`,
     [configId, req.session.user.id],
     (err, row) => {
       if (err) {
@@ -529,9 +541,12 @@ app.get('/load-configuration', ensureAuthenticated, (req, res) => {
         return res.status(500).json({ error: "Error loading configuration." });
       }
       if (!row) {
+        console.log("Configuration not found for ID:", configId); // Log for missing config
         return res.status(404).json({ message: "Configuration not found." });
       }
-      res.json({ success: true, configuration: row });
+
+      const fullConfig = JSON.parse(row.configJson);
+      res.json({ success: true, configuration: fullConfig });
     }
   );
 });

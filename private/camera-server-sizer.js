@@ -407,7 +407,7 @@ const CameraServerSizer = {
     calculatePhysicalHosts: function(vmCount, cpuCoresPerVM, ramPerVM) {
         // Typical enterprise server specs
         const coresPerPhysicalHost = 64; // Dual socket server with 32 cores per socket
-        const ramPerPhysicalHost = 512; // GB
+        const ramPerPhysicalHost = 512; // Total RAM per host in GB
         
         // Calculate hosts needed based on CPU cores (with overcommit factor)
         const cpuOvercommitFactor = 4; // Typical for surveillance workloads
@@ -1103,37 +1103,41 @@ const CameraServerSizer = {
             return false;
         }
     },
-    
+
     // Save configuration as a preset
-    saveConfigurationPreset: function() {
+    saveConfigurationPreset: async function () {
         try {
             // Gather all current inputs
             this.gatherInputs();
-            
-            // Create a preset object
-            const preset = {
-                name: prompt("Enter a name for this configuration preset:"),
-                timestamp: new Date().toISOString(),
-                configuration: JSON.parse(JSON.stringify(this.inputs))
-            };
-            
-            // Don't save if the user cancels the prompt
-            if (!preset.name) return false;
-            
-            // Get existing presets or initialize a new array
-            let savedPresets = JSON.parse(localStorage.getItem('cameraServerPresets') || '[]');
-            
-            // Add new preset to the array
-            savedPresets.push(preset);
-            
-            // Save back to localStorage
-            localStorage.setItem('cameraServerPresets', JSON.stringify(savedPresets));
-            
-            alert(`Configuration "${preset.name}" has been saved successfully.`);
-            return true;
+
+            // Retrieve the site name directly from the input field
+            let name = document.getElementById('siteNameInput').value;
+
+            // Validate site name
+            if (!name || name.trim() === '') {
+                alert("Configuration name cannot be empty.");
+                return false;
+            }
+
+            // Trim any extra spaces from the name
+            name = name.trim();
+
+            // Add name to inputs (used as siteName on server)
+            this.inputs.siteName = name;
+
+            // Call the server save function
+            const success = await saveConfigurationToServer(this.inputs);
+
+            if (success) {
+                console.log(`Configuration "${name}" has been saved to the server.`);
+                return true;
+            } else {
+                console.log("Failed to save configuration to server.");
+                return false;
+            }
         } catch (error) {
-            console.error("Error saving preset:", error);
-            alert("An error occurred while saving the configuration preset.");
+            console.error("Error saving configuration:", error);
+            alert("An error occurred while saving.");
             return false;
         }
     },
@@ -1175,7 +1179,7 @@ const CameraServerSizer = {
             const hoursGroup = document.getElementById('hoursPerDayGroup');
             hoursGroup.style.display = config.recordingMode === 'custom' ? 'block' : 'none';
             
-            alert(`Configuration "${presetName}" has been loaded successfully.`);
+            console.log(`Configuration "${presetName}" has been loaded successfully.`);
             return true;
         } catch (error) {
             console.error("Error loading preset:", error);
@@ -1233,11 +1237,12 @@ const CameraServerSizer = {
     }
 };
 
+
 // Initialize the application when the script loads
 document.addEventListener('DOMContentLoaded', function() {
     CameraServerSizer.init();
     CameraServerSizer.addExportButton();
-    
+/*
     // Add a presets dropdown to the UI if needed
     const presets = JSON.parse(localStorage.getItem('cameraServerPresets') || '[]');
     
@@ -1268,92 +1273,75 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+*/
 });
 
+// Save Configuration to Server
+async function saveConfigurationToServer(config) {
+    try {
+        const response = await fetch('/save-configuration', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
 
-// Function to fetch saved configurations
-function fetchConfigurations() {
-    const configDiv = document.getElementById("sidebar-configurations");
-    
-    if (!configDiv) {
-        console.error("Sidebar element not found.");
-        return;
+        const result = await response.json();
+
+        if (result.success) {
+            console.log("Configuration saved to server!");
+            loadSavedConfigurations(); // Refresh sidebar
+            return true;
+        } else {
+            alert("Failed to save configuration.");
+            console.error(result);
+            return false;
+        }
+    } catch (err) {
+        console.error("Network/server error:", err);
+        alert("Error saving to server.");
+        return false;
     }
+}
 
-    // Retrieve saved configurations from localStorage
-    const savedPresets = JSON.parse(localStorage.getItem('cameraServerPresets') || '[]');
+// Load Configuration from Server
+async function loadConfigurationById(configId) {
+    try {
+        console.log("Trying to load config ID:", configId);
 
-    // Debugging: Check if presets exist
-    console.log("Loaded Presets:", savedPresets);
+        const response = await fetch(`/load-configuration?id=${configId}`);
+        const data = await response.json();
 
-    // Clear existing sidebar content
-    configDiv.innerHTML = "";
+        console.log("Response from /load-configuration:", data);
 
-    if (savedPresets.length === 0) {
-        configDiv.innerHTML = "<p>No saved configurations</p>";
-        return;
+        if (!data.success || !data.configuration) {
+            alert("Configuration not found.");
+            return;
+        }
+
+        loadConfiguration(data.configuration); // <- assuming this sets the form fields
+    } catch (err) {
+        console.error("Error loading configuration:", err);
+        alert("Error loading configuration.");
     }
-
-    // Populate sidebar with saved configurations
-    savedPresets.forEach(config => {
-        const entry = document.createElement("div");
-        entry.classList.add("config-item");
-        entry.innerHTML = `
-            <div style="border: 1px solid #ddd; padding: 10px; margin: 5px; border-radius: 5px;">
-                <p><strong>Site:</strong> ${config.name}</p>
-                <p><strong>Cameras:</strong> ${config.configuration.cameraCount}</p>
-                <p><strong>Retention:</strong> ${config.configuration.retentionDays} days</p>
-                <button onclick="loadConfiguration('${config.name}')">Load</button>
-                <button onclick="deleteConfiguration('${config.name}')" style="background-color: red; color: white;">Delete</button>
-            </div>`;
-        configDiv.appendChild(entry);
-    });
 }
 
-// Load configurations when the page is ready
-document.addEventListener("DOMContentLoaded", fetchConfigurations);
-
-// Function to save a configuration
-function saveConfiguration(config) {
-    fetch('/save-configuration', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
-    })
-    .then(() => {
-        alert("Configuration saved!");
-        fetchConfigurations();
-    })
-    .catch(error => console.error('Error saving configuration:', error));
-}
-
-function loadConfiguration(configName) {
-    const savedPresets = JSON.parse(localStorage.getItem('cameraServerPresets') || '[]');
-    
-    const selectedConfig = savedPresets.find(preset => preset.name === configName);
-    
-    if (!selectedConfig) {
-        alert("Configuration not found.");
-        return;
+// Delete Configuration from Server
+async function deleteConfiguration(configId) {
+    if (!confirm("Are you sure you want to delete this configuration?")) return;
+  
+    try {
+      const res = await fetch(`/delete-configuration?id=${configId}`, { method: 'DELETE' });
+      const result = await res.json();
+  
+      if (result.success) {
+        console.log("Configuration deleted.");
+        loadSavedConfigurations(); // Reload the list
+      } else {
+        alert("Failed to delete configuration.");
+      }
+    } catch (err) {
+      console.error("Error deleting configuration:", err);
+      alert("Error deleting configuration.");
     }
+  }
 
-    console.log("Loading configuration:", selectedConfig);
-
-    // Example: Populate form fields (update based on your form structure)
-    document.getElementById("cameraCount").value = selectedConfig.configuration.cameraCount;
-    document.getElementById("retentionDays").value = selectedConfig.configuration.retentionDays;
-}
-
-// Function to delete a saved configuration
-function deleteConfiguration(configName) {
-    let savedPresets = JSON.parse(localStorage.getItem('cameraServerPresets') || '[]');
-    
-    // Filter out the configuration to delete
-    savedPresets = savedPresets.filter(config => config.name !== configName);
-    
-    // Save back to localStorage
-    localStorage.setItem('cameraServerPresets', JSON.stringify(savedPresets));
-    
-    alert("Configuration deleted!");
-    fetchConfigurations(); // Refresh the list
-}

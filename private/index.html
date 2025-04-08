@@ -297,56 +297,124 @@
       document.body.classList.toggle('dark-mode');
       localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
     }
-
-    window.onload = function () {
+  
+    window.onload = async function () {
+      // Theme
       const savedTheme = localStorage.getItem('theme');
       if (savedTheme === 'dark') {
         document.body.classList.add('dark-mode');
       }
-    }
-
+  
+      // Load configurations from server
+      await loadSavedConfigurations();
+    };
+  
     function toggleSidebar() {
       const sidebar = document.getElementById('sidebar');
       sidebar.classList.toggle('collapsed');
     }
-
-    function loadSavedConfigurations() {
-      const savedConfigs = JSON.parse(localStorage.getItem('configurations')) || [];
+  
+    async function loadSavedConfigurations() {
       const container = document.getElementById('sidebar-configurations');
-      container.innerHTML = '';
-      
-      if (savedConfigs.length === 0) {
-        container.innerHTML = '<p>No saved configurations.</p>';
-        return;
-      }
+      container.innerHTML = ''; // Clear any previous configurations
 
-      savedConfigs.forEach((config, index) => {
-        const btn = document.createElement('button');
-        btn.textContent = config.name || `Configuration ${index + 1}`;
-        btn.onclick = () => loadConfiguration(config);
-        container.appendChild(btn);
-      });
-    }
+      try {
+        const response = await fetch('/get-configurations'); // Fetch saved configurations from the server
+        const data = await response.json();
 
-    function loadConfiguration(config) {
-        document.getElementById('siteNameInput').value = config.siteName;
-        document.getElementById('cameraCount').value = config.cameraCount;
-        document.getElementById('resolution').value = config.resolution;
-        document.getElementById('compression').value = config.compression;
-        document.getElementById('frameRate').value = config.frameRate;
-        document.getElementById('motionActivity').value = config.motionActivity;
-        document.getElementById('recordingMode').addEventListener('change', function () {
-            document.getElementById('hoursPerDayGroup').style.display =
-                this.value === 'custom' ? 'block' : 'none';
+        console.log('Loaded data:', data); // Log the response to inspect the structure
+        console.log(data.configurations);
+
+        if (!data.success || !data.configurations || data.configurations.length === 0) {
+          container.innerHTML = '<p>No saved configurations.</p>'; // Display a message if no configurations are found
+          return;
+        } 
+
+        container.innerHTML = '';
+
+        // Loop through the configurations and create a button for each one
+        data.configurations.forEach((config) => {
+            const configWrapper = document.createElement('div');
+            configWrapper.className = 'config-wrapper';
+
+            const configName = document.createElement('span');
+            configName.className = 'config-name';
+            configName.textContent = config.siteName || `Configuration ${config.id}`;
+
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'button-container';
+
+            const loadButton = document.createElement('button');
+            loadButton.className = 'load-button';
+            loadButton.textContent = 'Load';
+            loadButton.onclick = () => fetchAndLoadConfiguration(config.id);
+
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-button';
+            deleteButton.textContent = 'Delete';
+            deleteButton.onclick = () => deleteConfiguration(config.id);
+
+            buttonContainer.appendChild(loadButton);
+            buttonContainer.appendChild(deleteButton);
+
+            configWrapper.appendChild(configName);
+            configWrapper.appendChild(buttonContainer);
+            container.appendChild(configWrapper);
         });
-        document.getElementById('hoursPerDay').value = config.hoursPerDay;
-        document.getElementById('retentionDays').value = config.retentionDays;
-        document.getElementById('hdSize').value = config.hdSize;
-        document.getElementById('redundancyLevel').value = config.redundancyLevel;
-        document.getElementById('storageBuffer').value = config.storageBuffer;
-        document.getElementById('filesystemOverhead').value = config.filesystemOverhead;
-        document.getElementById('maxCamerasPerServer').value = config.maxCamerasPerServer;
-        document.getElementById('hardwareAcceleration').value = config.hardwareAcceleration;
+      } catch (err) {
+        console.error("Failed to load configurations:", err);
+        container.innerHTML = '<p>Error loading configurations.</p>'; // Display an error message
+      }
+    }
+  
+    async function fetchAndLoadConfiguration(configId) {
+        try {
+            console.log("Trying to load config ID:", configId);
+
+            // Send a request to the server to fetch the configuration
+            const response = await fetch(`/load-configuration?id=${configId}`);
+            
+            // Check if the response is successful
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Response from /load-configuration:", data);
+
+            // Check if the response data is valid and contains the configuration
+            if (data.success && data.configuration) {
+                loadConfiguration(data.configuration); // Proceed to load the configuration into the UI
+            } else {
+                alert("Configuration not found or data is invalid.");
+            }
+        } catch (err) {
+            console.error("Error loading configuration:", err);
+            alert("Error loading configuration.");
+        }
+    }
+  
+    function loadConfiguration(config) {
+      document.getElementById('siteNameInput').value = config.siteName;
+      document.getElementById('cameraCount').value = config.cameraCount;
+      document.getElementById('resolution').value = config.resolution;
+      document.getElementById('compression').value = config.compression;
+      document.getElementById('frameRate').value = config.frameRate;
+      document.getElementById('motionActivity').value = config.motionActivity;
+  
+      const recordingMode = document.getElementById('recordingMode');
+      recordingMode.value = config.recordingMode;
+      document.getElementById('hoursPerDayGroup').style.display =
+        recordingMode.value === 'custom' ? 'block' : 'none';
+  
+      document.getElementById('hoursPerDay').value = config.hoursPerDay;
+      document.getElementById('retentionDays').value = config.retentionDays;
+      document.getElementById('hdSize').value = config.hdSize;
+      document.getElementById('redundancyLevel').value = config.redundancyLevel;
+      document.getElementById('storageBuffer').value = config.storageBuffer;
+      document.getElementById('filesystemOverhead').value = config.filesystemOverhead;
+      document.getElementById('maxCamerasPerServer').value = config.maxCamerasPerServer;
+      document.getElementById('hardwareAcceleration').value = config.hardwareAcceleration;
     }
   </script>
   <script src="camera-server-sizer.js"></script>
