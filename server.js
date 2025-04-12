@@ -7,7 +7,7 @@ const path = require('path');
 
 const app = express();
 const db = new sqlite3.Database('./users.db');
-console.log("Connected to DB at:", path.resolve('./users.db'));
+console.log("✅ Connected to DB at:", path.resolve('./users.db'));
 // Wrap db.get() and db.run() inside Promise-based functions
 function dbGet(query, params = []) {
   return new Promise((resolve, reject) => {
@@ -47,8 +47,8 @@ db.serialize(() => {
     reset_token_expires INTEGER DEFAULT NULL
   )`);
 });
-
-console.log("Database and users table created successfully.");
+console.log("✅ Database created successfully.");
+console.log("✅ Users table created successfully.");
 
 app.use(express.json());  // ✅ Required for JSON requests
 app.use(bodyParser.urlencoded({ extended: true })); // ✅ Parses form data (x-www-form-urlencoded)
@@ -108,8 +108,8 @@ app.get('/profile', ensureAuthenticated, (req, res) => {
 app.get('/', ensureAuthenticated, (req, res) => res.sendFile(path.join(__dirname, 'private/index.html')));
 
 app.get('/camera-server-sizer.js', ensureAuthenticated, (req, res) => {
-  res.type('application/javascript'); // Explicit MIME type
-  res.sendFile(path.join(__dirname, 'private/camera-server-sizer.js'));
+  res.type('application/javascript');
+  res.sendFile(path.join(__dirname, 'private/camera-server-sizer.min.js'));
 });
 
 app.get('/admin.html', ensureAuthenticated, (req, res) => {
@@ -126,7 +126,7 @@ app.get('/get-user', async (req, res) => {
           return res.status(401).json({ error: 'User not authenticated' });
       }
 
-      console.log("Session Data:", req.session.user);  // Debugging line
+      // console.log("Session Data:", req.session.user);  // Debugging line
 
       const userId = req.session.user.id;
       const row = await dbGet(`SELECT username, email, real_name, date_of_birth, role, status, profile_picture, two_factor_enabled, last_login 
@@ -135,7 +135,7 @@ app.get('/get-user', async (req, res) => {
 
       if (!row) return res.status(404).json({ error: 'User not found' });
 
-      console.log("Fetched User Data:", row);  // Debugging line
+      // console.log("Fetched User Data:", row);  // Debugging line
 
       res.json(row);
   } catch (err) {
@@ -268,7 +268,7 @@ app.get('/logout', (req, res) => {
 // Update profile
 app.post('/update-profile', ensureAuthenticated, async (req, res) => {
   try {
-      console.log("Received update request:", req.body); // ✅ Debugging log
+      // console.log("Received update request:", req.body); // ✅ Debugging log
 
       const { email, real_name, date_of_birth } = req.body;
       if (!email || !real_name || !date_of_birth) {
@@ -489,8 +489,8 @@ app.post('/save-configuration', ensureAuthenticated, (req, res) => {
   }
 
   const configJson = JSON.stringify(req.body); // Save full config
-  console.log("Saving config for user:", req.session.user?.id);
-  console.log("Received config:", req.body);
+  console.log("✅ Saving config for user:", req.session.user?.id);
+  // console.log("Received config:", req.body);
 
   db.run(
     `INSERT INTO configurations (user_id, siteName, cameraCount, retentionDays, configJson) 
@@ -501,7 +501,7 @@ app.post('/save-configuration', ensureAuthenticated, (req, res) => {
         console.error("Database Error: Failed to save configuration.", err.message);
         return res.status(500).json({ error: "Error saving configuration." });
       }
-      res.json({ success: true, message: "Configuration saved.", id: this.lastID });
+      res.json({ success: true, message: "✅ Configuration saved.", id: this.lastID });
     }
   );
 });
@@ -520,7 +520,6 @@ app.get('/get-configurations', ensureAuthenticated, (req, res) => {
       if (!rows.length) {
         return res.status(404).json({ message: "No configurations found." });
       }
-      console.log("Configurations retrieved:", rows); // Add this log to see the retrieved data
       res.json({ success: true, configurations: rows });
     }
   );
@@ -530,7 +529,7 @@ app.get('/get-configurations', ensureAuthenticated, (req, res) => {
 app.get('/load-configuration', ensureAuthenticated, (req, res) => {
   const configId = req.query.id; // Ensure this is being passed correctly in the query string
 
-  console.log("Fetching configuration with ID:", configId); // Debug log to check the ID
+  // console.log("Fetching configuration with ID:", configId); // Debug log to check the ID
 
   db.get(
     `SELECT configJson FROM configurations WHERE id = ? AND user_id = ?`,
@@ -541,7 +540,7 @@ app.get('/load-configuration', ensureAuthenticated, (req, res) => {
         return res.status(500).json({ error: "Error loading configuration." });
       }
       if (!row) {
-        console.log("Configuration not found for ID:", configId); // Log for missing config
+        console.log("❌ Configuration not found for ID:", configId); // Log for missing config
         return res.status(404).json({ message: "Configuration not found." });
       }
 
@@ -678,6 +677,6 @@ app.delete('/admin/delete-user', authorizeOwner, async (req, res) => {
 
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-  console.log(`Access from other devices at http://<your-ip-address>:${PORT}`);
+  console.log(`✅ Server running at http://localhost:${PORT}`);
+  // console.log(`Access from other devices at http://<your-ip-address>:${PORT}`);
 });

@@ -4,21 +4,60 @@ const CameraServerSizer = {
     config: {
         bitrateFactors: {
             resolutions: {
-                '720p': 2,
-                '1080p': 4,
-                '2K': 6,
-                '4K': 12,
-                '8K': 24
+                '720p': 2.0,     // baseline at 30fps, H.264, medium motion
+                '1080p': 4.0,
+                '2K': 6.0,
+                '4K': 12.0,
+                '8K': 24.0
             },
+        
             compression: {
-                'H.264': 1,
-                'H.265': 0.6,
-                'H.266': 0.45
+                'H.264': {
+                    factor: 1.0,
+                    mode: 'CBR',   // default assumption
+                },
+                'H.265': {
+                    factor: 0.6,
+                    mode: 'VBR',
+                    efficiency: {
+                        motion: 1.0,   // base bitrate multiplier
+                        idle: 0.3     // VBR idle bitrate multiplier
+                    }
+                },
+                'H.266': {
+                    factor: 0.45,
+                    mode: 'VBR',
+                    efficiency: {
+                        motion: 1.0,
+                        idle: 0.25
+                    }
+                }
             },
-            activity: {
-                'low': 0.75,
-                'medium': 1,
-                'high': 1.4
+        
+            motionProfiles: {
+                low: {
+                    avgMotionHours: 4,
+                    idleHours: 20,
+                    motionFactor: 1.0,
+                    idleFactor: 0.3
+                },
+                medium: {
+                    avgMotionHours: 12,
+                    idleHours: 12,
+                    motionFactor: 1.0,
+                    idleFactor: 0.4
+                },
+                high: {
+                    avgMotionHours: 20,
+                    idleHours: 4,
+                    motionFactor: 1.0,
+                    idleFactor: 0.6
+                }
+            },
+        
+            framerateScaling: function(fps) {
+                const baseline = 30;
+                return Math.pow(fps / baseline, 0.9); // non-linear scaling
             }
         },
         raidMinDrives: {
@@ -310,80 +349,65 @@ const CameraServerSizer = {
     // Calculate server requirements
     calculateServerRequirements: function() {
         try {
-            // Calculate bitrate based on resolution, compression, framerate and activity
-            let bitrateMbps = this.calculateBitrate(
-                this.inputs.resolution, 
-                this.inputs.compression, 
-                this.inputs.frameRate, 
-                this.inputs.motionActivity
-            );
-            
-            // Calculate storage requirements with proper unit conversion and overhead
-            const bitrateGBPerHour = bitrateMbps * this.config.mbpsToGBPerHour;
-            
-            // Account for variable bitrate efficiency in custom hours mode
-            const effectiveHoursMultiplier = this.inputs.recordingMode === 'custom' ? 
-                this.getEffectiveHoursMultiplier(this.inputs.motionActivity) : 1;
-            const effectiveHours = this.inputs.hoursPerDay * effectiveHoursMultiplier;
-            
-            const dailyStoragePerCamera = bitrateGBPerHour * effectiveHours;
-            const totalRawStorageGB = dailyStoragePerCamera * this.inputs.cameraCount * this.inputs.retentionDays;
-            const totalRawStorageTB = totalRawStorageGB / 1024;
-            
-            // Apply storage buffer
-            const storageWithBufferTB = totalRawStorageTB * (1 + this.inputs.storageBuffer);
-            
-            // Apply filesystem overhead
-            const storageWithOverheadTB = storageWithBufferTB * (1 + this.inputs.filesystemOverhead);
-            
-            // Calculate RAID configuration
-            const raidConfig = this.calculateRaidConfiguration(
-                storageWithOverheadTB, 
-                this.inputs.hdSize, 
-                this.inputs.redundancyLevel
-            );
-            
-            // Calculate server resources
-            const serversNeededForCameras = Math.ceil(this.inputs.cameraCount / this.inputs.maxCamerasPerServer);
-            const serversNeededForStorage = Math.ceil(storageWithOverheadTB / raidConfig.usableCapacity);
-            const serversNeeded = Math.max(serversNeededForCameras, serversNeededForStorage);
-            const camerasPerServer = Math.ceil(this.inputs.cameraCount / serversNeeded);
-            
-            // Calculate CPU and RAM requirements
-            const cpuCoresPerCamera = this.calculateCpuCoresPerCamera(
-                this.inputs.resolution, 
-                this.inputs.compression, 
-                this.inputs.frameRate, 
-                this.inputs.hardwareAcceleration
-            );
-            
-            // Apply VM overhead to CPU calculation
-            const vmSize = this.determineVMSize(camerasPerServer);
+            const {
+                resolution, compression, frameRate, motionActivity,
+                recordingMode, hoursPerDay, cameraCount, retentionDays,
+                storageBuffer, filesystemOverhead, hdSize,
+                redundancyLevel, maxCamerasPerServer, hardwareAcceleration
+            } = this.inputs;
+    
+            // --- Bitrate and Storage ---
+            const bitrateMbps = this.calculateBitrate(resolution, compression, frameRate, motionActivity);
+            const gbPerHourPerCamera = bitrateMbps * this.config.mbpsToGBPerHour;
+    
+            const hoursMultiplier = (recordingMode === 'custom') ?
+                this.getEffectiveHoursMultiplier(motionActivity) : 1;
+            const recordingHoursPerDayPerCamera = hoursPerDay * hoursMultiplier;
+    
+            const dailyGbPerCamera = gbPerHourPerCamera * recordingHoursPerDayPerCamera;
+            const totalGb = dailyGbPerCamera * cameraCount * retentionDays;
+            const totalTb = totalGb / 1024;
+    
+            const storageWithBuffer = totalTb * (1 + storageBuffer);
+            const storageWithOverhead = storageWithBuffer * (1 + filesystemOverhead);
+    
+            // --- RAID Configuration ---
+            const raidConfig = this.calculateRaidConfiguration(storageWithOverhead, hdSize, redundancyLevel);
+    
+            // --- Server Count ---
+            const serversForCameras = Math.ceil(cameraCount / maxCamerasPerServer);
+            const serversForStorage = Math.ceil(storageWithOverhead / raidConfig.usableCapacity);
+            const vmsNeeded = Math.max(serversForCameras, serversForStorage);
+            const camerasPerVM = Math.ceil(cameraCount / vmsNeeded);
+    
+            // --- VM Sizing ---
+            const vmSize = this.determineVMSize(camerasPerVM);
             const cpuOverheadFactor = this.config.vmSizing.sizes[vmSize].cpuOverheadFactor;
-            const cpuCoresPerVM = Math.max(4, Math.ceil(camerasPerServer * cpuCoresPerCamera * cpuOverheadFactor));
-            
-            const ramPerVM = this.calculateRamRequirements(camerasPerServer, this.inputs.resolution);
-            
-            // Network bandwidth with proper overhead accounting
-            const networkOverheadFactor = 1.1; // 10% overhead for network protocols
-            const networkBandwidthMbps = camerasPerServer * bitrateMbps * networkOverheadFactor;
-            
-            // Determine number of physical hosts needed
-            const physicalHostsNeeded = this.calculatePhysicalHosts(serversNeeded, cpuCoresPerVM, ramPerVM);
-            
+            const cpuPerCamera = this.calculateCpuCoresPerCamera(resolution, compression, frameRate, hardwareAcceleration);
+            const cpuCoresPerVM = Math.max(4, Math.ceil(camerasPerVM * cpuPerCamera * cpuOverheadFactor));
+    
+            const ramPerVM = this.calculateRamRequirements(camerasPerVM, resolution);
+    
+            // --- Networking ---
+            const networkOverhead = 1.1;
+            const networkBandwidth = camerasPerVM * bitrateMbps * networkOverhead;
+    
+            // --- Host Calculation ---
+            const physicalHostsNeeded = this.calculatePhysicalHosts(vmsNeeded, cpuCoresPerVM, ramPerVM);
+    
             return {
                 bitrateMbps,
-                dailyStoragePerCamera,
-                totalRawStorageTB,
-                storageWithBufferTB,
-                storageWithOverheadTB,
+                dailyStoragePerCamera: dailyGbPerCamera,
+                totalRawStorageTB: totalTb,
+                storageWithBufferTB: storageWithBuffer,
+                storageWithOverheadTB: storageWithOverhead,
                 raidConfig,
-                vmsNeeded: serversNeeded,
-                camerasPerVM: camerasPerServer,
+                vmsNeeded,
+                camerasPerVM,
                 cpuCoresPerVM,
                 ramPerVM,
-                networkBandwidthMbps,
-                hardwareAcceleration: this.inputs.hardwareAcceleration,
+                networkBandwidthMbps: parseFloat(networkBandwidth.toFixed(2)),
+                hardwareAcceleration,
                 vmSize,
                 physicalHostsNeeded
             };
@@ -434,24 +458,43 @@ const CameraServerSizer = {
     },
     
     // Calculate bitrate based on resolution, compression, and other factors
-    calculateBitrate: function(resolution, compression, frameRate, motionActivity) {
-        // Get base bitrate for the resolution
-        let bitrate = this.config.bitrateFactors.resolutions[resolution] || 4;
-        
-        // Adjust for compression codec
-        bitrate *= this.config.bitrateFactors.compression[compression] || 1;
-        
-        // Adjust for framerate (non-linear scaling)
-        bitrate *= this.getFramerateMultiplier(frameRate);
-        
-        // Adjust for motion activity level
-        bitrate *= this.config.bitrateFactors.activity[motionActivity] || 1;
-        
-        // Add small variability factor for real-world conditions
-        const variabilityFactor = 0.95 + (Math.random() * 0.1); // 0.95-1.05
-        bitrate *= variabilityFactor;
-        
-        return parseFloat(bitrate.toFixed(2));
+    calculateBitrate: function(resolution, compression, frameRate, motionProfileKey) {
+        const {
+            resolutions,
+            compression: compressionMap,
+            motionProfiles,
+            framerateScaling
+        } = this.config.bitrateFactors;
+    
+        const resolutionFactor = resolutions[resolution];
+        const codec = compressionMap[compression];
+        const motionProfile = motionProfiles[motionProfileKey];
+    
+        if (!resolutionFactor || !codec || !motionProfile) {
+            throw new Error(`Unsupported resolution (${resolution}), compression (${compression}), or motion profile (${motionProfileKey})`);
+        }
+    
+        // Get VBR efficiency (for motion and idle)
+        const isVBR = codec.mode === 'VBR';
+        const compressionFactor = codec.factor;
+        const motionEfficiency = isVBR ? codec.efficiency.motion : 1;
+        const idleEfficiency = isVBR ? codec.efficiency.idle : 1;
+    
+        const fpsFactor = typeof framerateScaling === 'function'
+            ? framerateScaling(frameRate)
+            : frameRate / 30;
+    
+        // Bitrate per camera (weighted between motion and idle)
+        const motionHours = motionProfile.avgMotionHours;
+        const idleHours = motionProfile.idleHours;
+    
+        const motionBitrate = resolutionFactor * compressionFactor * motionEfficiency * fpsFactor;
+        const idleBitrate   = resolutionFactor * compressionFactor * idleEfficiency   * fpsFactor;
+    
+        const weightedBitrate =
+            ((motionBitrate * motionHours) + (idleBitrate * idleHours)) / 24;
+    
+        return parseFloat(weightedBitrate.toFixed(2)); // Mbps
     },
     
     // Get framerate multiplier for bitrate calculation
@@ -792,7 +835,7 @@ const CameraServerSizer = {
             document.getElementById('totalRawStorage').textContent = `${results.totalRawStorageTB.toFixed(2)} TB`;
             document.getElementById('storageWithBuffer').textContent = `${results.storageWithBufferTB.toFixed(2)} TB`;
             document.getElementById('storageWithOverhead').textContent = `${results.storageWithOverheadTB.toFixed(2)} TB`;
-
+    
             // Generate Storage Analysis Summary
             document.getElementById('storageAnalysis').innerHTML = `
                 <p><strong>Storage Analysis Summary:</strong></p>
@@ -810,63 +853,130 @@ const CameraServerSizer = {
                 <p><strong>Recommendation:</strong> To ensure long-term reliability, consider RAID configurations optimized 
                 for high write endurance and redundancy, such as RAID 6 or RAID 10.</p>
             `;
-
+    
             // Update the headings to reflect VM-based storage allocation
             document.querySelectorAll('.server-heading').forEach(heading => {
                 heading.textContent = heading.textContent.replace('Server', 'VM');
             });
             
-            // RAID Configuration
+            // RAID Configuration - UPDATED FOR NEW FORMAT
             document.getElementById('raidLevel').textContent = results.raidConfig.raidLevel;
             document.getElementById('drivesNeeded').textContent = results.raidConfig.totalDrives;
             document.getElementById('driveSize').textContent = `${results.raidConfig.hdSizeTB} TB`;
             document.getElementById('totalRawCapacity').textContent = `${results.raidConfig.totalRawCapacity.toFixed(2)} TB`;
             document.getElementById('usableCapacity').textContent = `${results.raidConfig.usableCapacity.toFixed(2)} TB`;
-
-            // Generate RAID Analysis
-            document.getElementById('raidAnalysis').innerHTML = `
+            
+            // Add the new storage efficiency field
+            if (document.getElementById('storageEfficiency')) {
+                document.getElementById('storageEfficiency').textContent = results.raidConfig.storageEfficiency || 
+                    `${(results.raidConfig.usableCapacity / results.raidConfig.totalRawCapacity * 100).toFixed(1)}%`;
+            }
+            
+            // Handle multi-array configuration if present
+            if (results.raidConfig.arrayCount && document.getElementById('arrayCount')) {
+                // Show the array details section
+                const arrayDetailsSection = document.getElementById('arrayDetailsSection');
+                if (arrayDetailsSection) {
+                    arrayDetailsSection.style.display = results.raidConfig.arrayCount > 1 ? 'block' : 'none';
+                }
+                
+                // Update array count
+                document.getElementById('arrayCount').textContent = results.raidConfig.arrayCount;
+                
+                // Generate array details
+                if (document.getElementById('arrayDetails') && results.raidConfig.drivesPerArray) {
+                    const arrayDetailsContainer = document.getElementById('arrayDetails');
+                    arrayDetailsContainer.innerHTML = '';
+                    
+                    for (let i = 0; i < results.raidConfig.arrayCount; i++) {
+                        const arrayDetail = document.createElement('div');
+                        arrayDetail.className = 'array-detail-item';
+                        arrayDetail.innerHTML = `
+                            <h5>Array ${i + 1}</h5>
+                            <div class="array-info">
+                                <div class="array-info-item">
+                                    <span class="array-info-label">Drives:</span>
+                                    <span class="array-info-value">${results.raidConfig.drivesPerArray[i]}</span>
+                                </div>
+                                <div class="array-info-item">
+                                    <span class="array-info-label">Usable Capacity:</span>
+                                    <span class="array-info-value">${results.raidConfig.capacityPerArray[i].toFixed(2)} TB</span>
+                                </div>
+                            </div>
+                        `;
+                        arrayDetailsContainer.appendChild(arrayDetail);
+                    }
+                }
+            }
+    
+            // Generate RAID Analysis with expanded information
+            let raidAnalysisHTML = `
                 <p><strong>Recommended RAID Configuration:</strong></p>
                 <ul>
                     <li><strong>RAID Level:</strong> ${results.raidConfig.raidLevel} (optimized for ${getRaidBenefits(results.raidConfig.raidLevel)})</li>
                     <li><strong>Total Drives Required:</strong> ${results.raidConfig.totalDrives} × ${results.raidConfig.hdSizeTB} TB drives</li>
                     <li><strong>Raw Storage Capacity:</strong> ${results.raidConfig.totalRawCapacity.toFixed(2)} TB</li>
                     <li><strong>Usable Storage Capacity:</strong> ${results.raidConfig.usableCapacity.toFixed(2)} TB (after redundancy & overhead)</li>
+                    <li><strong>Storage Efficiency:</strong> ${results.raidConfig.storageEfficiency || 
+                        `${(results.raidConfig.usableCapacity / results.raidConfig.totalRawCapacity * 100).toFixed(1)}%`}</li>
                     <li><strong>Fault Tolerance:</strong> ${getRaidFaultTolerance(results.raidConfig.raidLevel)}</li>
+            `;
+            
+            // Add array information if applicable
+            if (results.raidConfig.arrayCount && results.raidConfig.arrayCount > 1) {
+                raidAnalysisHTML += `
+                    <li><strong>Array Configuration:</strong> ${results.raidConfig.arrayCount} separate arrays with maximum ${
+                        Math.max(...(results.raidConfig.drivesPerArray || [12]))} drives per array</li>
+                `;
+            }
+            
+            raidAnalysisHTML += `
                 </ul>
                 <p><strong>Note:</strong> Ensure proper disk monitoring and hot spare drives for higher resilience.</p>
             `;
-
+            
+            // Add array-specific recommendations for multi-array setups
+            if (results.raidConfig.arrayCount && results.raidConfig.arrayCount > 1) {
+                raidAnalysisHTML += `
+                <p><strong>Multi-Array Deployment:</strong> Storage requirement has been divided into ${
+                    results.raidConfig.arrayCount} separate arrays to maintain optimal performance and rebuild times. 
+                    Consider distributing these arrays across separate storage controllers for improved performance.</p>
+                `;
+            }
+            
+            document.getElementById('raidAnalysis').innerHTML = raidAnalysisHTML;
+    
             // Function to provide RAID benefits
             function getRaidBenefits(raidLevel) {
                 const benefits = {
-                    'RAID 0': 'high performance but no redundancy',
-                    'RAID 1': 'mirroring for data protection',
-                    'RAID 5': 'balanced performance and redundancy',
-                    'RAID 6': 'extra fault tolerance with dual-parity',
-                    'RAID 10': 'high performance and redundancy (striped mirroring)'
+                    'RAID0': 'high performance but no redundancy',
+                    'RAID1': 'mirroring for data protection',
+                    'RAID5': 'balanced performance and redundancy',
+                    'RAID6': 'extra fault tolerance with dual-parity',
+                    'RAID10': 'high performance and redundancy (striped mirroring)'
                 };
-                return benefits[raidLevel] || 'optimized redundancy and performance';
+                return benefits[raidLevel.replace(/\s+/g, '')] || 'optimized redundancy and performance';
             }
-
+    
             // Function to determine fault tolerance
             function getRaidFaultTolerance(raidLevel) {
                 const faultTolerance = {
-                    'RAID 0': 'No drive failure tolerance',
-                    'RAID 1': 'Can tolerate 1 drive failure',
-                    'RAID 5': 'Can tolerate 1 drive failure',
-                    'RAID 6': 'Can tolerate up to 2 drive failures',
-                    'RAID 10': 'Can tolerate up to 1 drive failure per mirrored pair'
+                    'RAID0': 'No drive failure tolerance',
+                    'RAID1': 'Can tolerate 1 drive failure',
+                    'RAID5': 'Can tolerate 1 drive failure',
+                    'RAID6': 'Can tolerate up to 2 drive failures',
+                    'RAID10': 'Can tolerate up to 1 drive failure per mirrored pair'
                 };
-                return faultTolerance[raidLevel] || 'Varies based on configuration';
+                return faultTolerance[raidLevel.replace(/\s+/g, '')] || 'Varies based on configuration';
             }
-
+    
             // VM Requirements
             document.getElementById('vmsNeeded').textContent = results.vmsNeeded;
             document.getElementById('camerasPerVM').textContent = results.camerasPerVM;
             document.getElementById('cpuCoresPerVM').textContent = results.cpuCoresPerVM;
             document.getElementById('ramPerVM').textContent = `${results.ramPerVM} GB`;
             document.getElementById('networkPerVM').textContent = `${Math.ceil(results.networkBandwidthMbps)} Mbps`;
-
+    
             document.getElementById('vmAnalysis').innerHTML = `
                 <p>Based on your requirements, we recommend deploying 
                 <strong>${results.vmsNeeded} virtual machines</strong>, each handling 
@@ -876,17 +986,17 @@ const CameraServerSizer = {
                 <strong>${Math.ceil(results.networkBandwidthMbps)} Mbps</strong> of bandwidth.</p>
                 <p>Recommended VM size: <strong>${results.vmSize.toUpperCase()}</strong></p>
             `;
-
+    
             // Generate virtualization-specific recommendations
             const virtualRecs = this.generateVirtualizationRecommendations(results);
-
+    
             // Physical Infrastructure
             document.getElementById('physicalHostsNeeded').textContent = results.physicalHostsNeeded;
             document.getElementById('hypervisorRecommendation').textContent = virtualRecs.hypervisorRecommendation;
             document.getElementById('storageApproach').textContent = virtualRecs.storageApproach;
             document.getElementById('cpuRecommendation').textContent = virtualRecs.hostRecommendation.cpuRecommendation;
             document.getElementById('ramRecommendation').textContent = virtualRecs.hostRecommendation.ramRecommendation;
-
+    
             document.getElementById('physicalAnalysis').innerHTML = `
                 <p>To host these VMs efficiently, you will need approximately 
                 <strong>${results.physicalHostsNeeded} physical servers</strong>.</p>
@@ -895,7 +1005,7 @@ const CameraServerSizer = {
                 <strong>${virtualRecs.hostRecommendation.cpuRecommendation}</strong> and 
                 <strong>${virtualRecs.hostRecommendation.ramRecommendation}</strong>.</p>
             `;
-
+    
             // Hardware Acceleration Note
             if (results.hardwareAcceleration !== 'none') {
                 document.getElementById('hwAccelNote').innerHTML = `
@@ -915,7 +1025,7 @@ const CameraServerSizer = {
             } else {
                 document.getElementById('hwAccelNote').style.display = 'none';
             }
-
+    
             // Performance Recommendations
             let performanceRecs = `
                 <li><strong>Network:</strong> Implement a QoS-enabled dedicated VLAN for camera traffic with at least 
@@ -928,7 +1038,7 @@ const CameraServerSizer = {
                 CPU pinning with NUMA awareness and dedicated GPU resources where applicable. Implement live migration capability for 
                 maintenance without recording interruption.</li>
             `;
-
+    
             // Additional recommendations based on camera density
             if (results.camerasPerVM > 20) {
                 performanceRecs += `
@@ -951,7 +1061,7 @@ const CameraServerSizer = {
                 <li><strong>Storage Redundancy:</strong> Deploy enterprise-class storage with dual controllers, battery-backed cache, and RAID 6/60 or erasure coding (minimum 2N protection). Maintain separate metadata volumes with higher redundancy levels.</li>
                 <li><strong>Network Resilience:</strong> Implement full fabric redundancy with dual switches, MLAG/VPC configurations, and automatic link failure detection. Configure diverse physical paths for critical camera traffic.</li>
             `;
-
+    
             // If multiple physical hosts are needed, add additional failover recommendations
             if (results.physicalHostsNeeded > 1) {
                 redundancyRecs += `
@@ -959,9 +1069,9 @@ const CameraServerSizer = {
                     <li><strong>Disaster Recovery:</strong> Configure asynchronous cross-site replication with RPO &lt;15 minutes and automated runbooks for failover activation. For mission-critical deployments, maintain hot standby systems with dedicated cross-connections and automatic takeover capability.</li>
                 `;
             }
-
+    
             document.getElementById('redundancyRecommendations').innerHTML = redundancyRecs;
-
+    
             // Scaling Recommendations
             let scalingRecs = '';
             const expansionCapacity = Math.floor((results.raidConfig.usableCapacity - results.storageWithOverheadTB) /
@@ -986,69 +1096,6 @@ const CameraServerSizer = {
             console.error("Error displaying results:", error);
             this.handleCalculationError(error);
         }
-    },
-    
-    // Generate a printable summary report
-    generatePrintableSummary: function(results) {
-        const summary = document.createElement('div');
-        summary.className = 'printable-summary';
-        
-        // Create a header section
-        const header = document.createElement('div');
-        header.innerHTML = `
-            <h2>Camera Server Sizing Summary Report</h2>
-            <p>Date: ${new Date().toLocaleDateString()}</p>
-            <p>Configuration: ${this.inputs.cameraCount} cameras, ${this.inputs.resolution} resolution, 
-            ${this.inputs.retentionDays} days retention</p>
-        `;
-        summary.appendChild(header);
-        
-        // Create storage section
-        const storageSection = document.createElement('div');
-        storageSection.innerHTML = `
-            <h3>Storage Requirements</h3>
-            <ul>
-                <li>Total Storage Needed: ${results.storageWithOverheadTB.toFixed(2)} TB</li>
-                <li>Recommended RAID: ${results.raidConfig.raidLevel} with ${results.raidConfig.totalDrives} drives 
-                of ${results.raidConfig.hdSizeTB} TB each</li>
-                <li>Usable Capacity: ${results.raidConfig.usableCapacity.toFixed(2)} TB</li>
-            </ul>
-        `;
-        summary.appendChild(storageSection);
-        
-        // Create VM section
-        const vmSection = document.createElement('div');
-        vmSection.innerHTML = `
-            <h3>Virtual Machine Requirements</h3>
-            <ul>
-                <li>VMs Required: ${results.vmsNeeded}</li>
-                <li>Per VM Specifications:
-                    <ul>
-                        <li>Cameras: ${results.camerasPerVM}</li>
-                        <li>CPU Cores: ${results.cpuCoresPerVM}</li>
-                        <li>RAM: ${results.ramPerVM} GB</li>
-                        <li>Network Bandwidth: ${Math.ceil(results.networkBandwidthMbps)} Mbps</li>
-                    </ul>
-                </li>
-                <li>Physical Hosts Required: ${results.physicalHostsNeeded}</li>
-            </ul>
-        `;
-        summary.appendChild(vmSection);
-        
-        // Create recommendations section
-        const recommendationsSection = document.createElement('div');
-        recommendationsSection.innerHTML = `
-            <h3>Key Recommendations</h3>
-            <ul>
-                <li>Hypervisor: ${virtualRecs.hypervisorRecommendation}</li>
-                <li>Storage: ${virtualRecs.storageApproach}</li>
-                <li>CPU: ${virtualRecs.hostRecommendation.cpuRecommendation}</li>
-                <li>RAM: ${virtualRecs.hostRecommendation.ramRecommendation}</li>
-            </ul>
-        `;
-        summary.appendChild(recommendationsSection);
-        
-        return summary;
     },
     
     // Export results to CSV format
@@ -1129,10 +1176,10 @@ const CameraServerSizer = {
             const success = await saveConfigurationToServer(this.inputs);
 
             if (success) {
-                console.log(`Configuration "${name}" has been saved to the server.`);
+                console.log(`✅ Configuration "${name}" has been saved to the server.`);
                 return true;
             } else {
-                console.log("Failed to save configuration to server.");
+                console.log("❌ Failed to save configuration to server.");
                 return false;
             }
         } catch (error) {
@@ -1179,7 +1226,7 @@ const CameraServerSizer = {
             const hoursGroup = document.getElementById('hoursPerDayGroup');
             hoursGroup.style.display = config.recordingMode === 'custom' ? 'block' : 'none';
             
-            console.log(`Configuration "${presetName}" has been loaded successfully.`);
+            console.log(`✅ Configuration "${presetName}" has been loaded successfully.`);
             return true;
         } catch (error) {
             console.error("Error loading preset:", error);
@@ -1242,38 +1289,6 @@ const CameraServerSizer = {
 document.addEventListener('DOMContentLoaded', function() {
     CameraServerSizer.init();
     CameraServerSizer.addExportButton();
-/*
-    // Add a presets dropdown to the UI if needed
-    const presets = JSON.parse(localStorage.getItem('cameraServerPresets') || '[]');
-    
-    if (presets.length > 0) {
-        const formElement = document.getElementById('sizingForm');
-        const presetsContainer = document.createElement('div');
-        presetsContainer.className = 'form-section';
-        presetsContainer.innerHTML = `
-            <h3>Load Saved Configuration</h3>
-            <div class="form-group">
-                <label for="configPresets">Saved Configurations:</label>
-                <select id="configPresets">
-                    <option value="">-- Select a configuration --</option>
-                    ${presets.map(p => `<option value="${p.name}">${p.name}</option>`).join('')}
-                </select>
-            </div>
-            <button type="button" id="loadPresetBtn" class="button">Load Configuration</button>
-        `;
-        
-        formElement.insertBefore(presetsContainer, formElement.firstChild);
-        
-        document.getElementById('loadPresetBtn').addEventListener('click', function() {
-            const selectedPreset = document.getElementById('configPresets').value;
-            if (selectedPreset) {
-                CameraServerSizer.loadConfigurationPreset(selectedPreset);
-            } else {
-                alert('Please select a configuration to load.');
-            }
-        });
-    }
-*/
 });
 
 // Save Configuration to Server
@@ -1288,7 +1303,7 @@ async function saveConfigurationToServer(config) {
         const result = await response.json();
 
         if (result.success) {
-            console.log("Configuration saved to server!");
+            console.log("✅ Configuration saved to server!");
             loadSavedConfigurations(); // Refresh sidebar
             return true;
         } else {
@@ -1324,7 +1339,7 @@ async function loadConfigurationById(configId) {
         alert("Error loading configuration.");
     }
 }
-
+/* Added to index.html
 // Delete Configuration from Server
 async function deleteConfiguration(configId) {
     if (!confirm("Are you sure you want to delete this configuration?")) return;
@@ -1344,4 +1359,4 @@ async function deleteConfiguration(configId) {
       alert("Error deleting configuration.");
     }
   }
-
+*/

@@ -10,6 +10,7 @@
 <body>
   <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
   <div class="sidebar" id="sidebar">
+    <img src="/tragicstudios.ico" alt="Tragic Studios" />
     <h3>Saved Configurations</h3>
     <div id="sidebar-configurations"></div>
   </div>
@@ -21,6 +22,7 @@
         <button class="profile-btn" onclick="window.location.href='/profile'">Profile</button>
         <button class="logout-btn" onclick="window.location.href='/logout'">Logout</button>
       </div>
+
       <h1>Camera Server Sizing Calculator</h1>
       <p>This tool helps you calculate server and storage requirements for IP camera deployments.</p>
 
@@ -202,7 +204,7 @@
                     <span id="raidLevel" class="result-value"></span>
                 </div>
                 <div class="result-item">
-                    <span class="result-label">Drives Needed:</span>
+                    <span class="result-label">Total Drives:</span>
                     <span id="drivesNeeded" class="result-value"></span>
                 </div>
                 <div class="result-item">
@@ -216,6 +218,10 @@
                 <div class="result-item">
                     <span class="result-label">Usable Capacity:</span>
                     <span id="usableCapacity" class="result-value"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Storage Efficiency:</span>
+                    <span id="storageEfficiency" class="result-value"></span>
                 </div>
             </div>
         </div>
@@ -322,8 +328,8 @@
         const response = await fetch('/get-configurations'); // Fetch saved configurations from the server
         const data = await response.json();
 
-        console.log('Loaded data:', data); // Log the response to inspect the structure
-        console.log(data.configurations);
+        // console.log('Loaded data:', data); // Log the response to inspect the structure
+        // console.log(data.configurations);
 
         if (!data.success || !data.configurations || data.configurations.length === 0) {
           container.innerHTML = '<p>No saved configurations.</p>'; // Display a message if no configurations are found
@@ -346,12 +352,12 @@
 
             const loadButton = document.createElement('button');
             loadButton.className = 'load-button';
-            loadButton.textContent = 'Load';
+            loadButton.textContent = '👉';
             loadButton.onclick = () => fetchAndLoadConfiguration(config.id);
 
             const deleteButton = document.createElement('button');
             deleteButton.className = 'delete-button';
-            deleteButton.textContent = 'Delete';
+            deleteButton.textContent = '🗑️';
             deleteButton.onclick = () => deleteConfiguration(config.id);
 
             buttonContainer.appendChild(loadButton);
@@ -362,35 +368,55 @@
             container.appendChild(configWrapper);
         });
       } catch (err) {
-        console.error("Failed to load configurations:", err);
+        console.error("❌ Failed to load configurations:", err);
         container.innerHTML = '<p>Error loading configurations.</p>'; // Display an error message
       }
     }
   
     async function fetchAndLoadConfiguration(configId) {
         try {
-            console.log("Trying to load config ID:", configId);
+            // console.log("Trying to load config ID:", configId);
 
             // Send a request to the server to fetch the configuration
             const response = await fetch(`/load-configuration?id=${configId}`);
             
             // Check if the response is successful
             if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+                throw new Error(`❌ HTTP error! Status: ${response.status}`);
             }
 
             const data = await response.json();
-            console.log("Response from /load-configuration:", data);
+            // console.log("Response from /load-configuration:", data);
 
             // Check if the response data is valid and contains the configuration
             if (data.success && data.configuration) {
                 loadConfiguration(data.configuration); // Proceed to load the configuration into the UI
             } else {
-                alert("Configuration not found or data is invalid.");
+                alert("❌ Configuration not found or data is invalid.");
             }
         } catch (err) {
-            console.error("Error loading configuration:", err);
-            alert("Error loading configuration.");
+            console.error("❌ Error loading configuration:", err);
+            alert("❌ Error loading configuration.");
+        }
+    }
+
+    // Delete Configuration from Server
+    async function deleteConfiguration(configId) {
+        if (!confirm("🛑 Are you sure you want to delete this configuration? 🛑")) return;
+    
+        try {
+        const res = await fetch(`/delete-configuration?id=${configId}`, { method: 'DELETE' });
+        const result = await res.json();
+    
+        if (result.success) {
+            console.log("✅ Configuration deleted.");
+            loadSavedConfigurations(); // Reload the list
+        } else {
+            alert("Failed to delete configuration.");
+        }
+        } catch (err) {
+        console.error("Error deleting configuration:", err);
+        alert("Error deleting configuration.");
         }
     }
   
@@ -417,6 +443,6 @@
       document.getElementById('hardwareAcceleration').value = config.hardwareAcceleration;
     }
   </script>
-  <script src="camera-server-sizer.js"></script>
+  <script src="private/camera-server-sizer.min.js"></script>
 </body>
 </html>
