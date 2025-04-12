@@ -10,19 +10,44 @@ const CameraServerSizer = {
                 '4K': 12.0,
                 '8K': 24.0
             },
-        
             compression: {
+                'MJPEG': {
+                    factor: 2.5,
+                    mode: 'CBR',
+                    notes: 'High bandwidth codec, no inter-frame compression'
+                },
                 'H.264': {
                     factor: 1.0,
                     mode: 'CBR',   // default assumption
+                    notes: 'Baseline codec used as reference point'
+                },
+                'H.264+': {
+                    factor: 0.9,
+                    mode: 'CBR',
+                    notes: 'Smart H.264 variant with improved efficiency'
                 },
                 'H.265': {
+                    factor: 0.7,
+                    mode: 'VBR',        // 30% reduction on average
+                    efficiency: {
+                        motion: 1.0,    // base bitrate multiplier
+                        idle: 0.55      // VBR idle bitrate multiplier
+                    },
+                    notes: 'Realistic VBR usage; supports hybrid motion compression'
+                },
+                'H.265_CBR': {
+                    factor: 0.7,
+                    mode: 'CBR',
+                    notes: 'CBR variant of H.265 (common in VMS configs)'
+                },
+                'H.265+': {
                     factor: 0.6,
                     mode: 'VBR',
                     efficiency: {
-                        motion: 1.0,   // base bitrate multiplier
-                        idle: 0.3     // VBR idle bitrate multiplier
-                    }
+                        motion: 1.0,
+                        idle: 0.4
+                    },
+                    notes: 'Smart codec variant (e.g., Hikvision H.265+)'
                 },
                 'H.266': {
                     factor: 0.45,
@@ -35,29 +60,113 @@ const CameraServerSizer = {
             },
         
             motionProfiles: {
+                veryLow: {
+                    avgMotionHours: 2,
+                    idleHours: 22,
+                    motionFactor: 1.0,
+                    idleFactor: 0.3,
+                    description: "Extremely limited activity. Only occasional movement.",
+                    examples: "Secure storage areas, server rooms, vacant buildings, emergency exits",
+                    notes: "Ideal for motion-based recording with significant storage savings"
+                },
                 low: {
                     avgMotionHours: 4,
                     idleHours: 20,
                     motionFactor: 1.0,
-                    idleFactor: 0.3
+                    idleFactor: 0.4,
+                    description: "Limited daily activity with long periods of inactivity.",
+                    examples: "Warehouses, offices after hours, utility rooms, archive storage, parking garages (overnight)",
+                    notes: "Good candidate for scheduled quality/framerate reduction during off-hours"
+                },
+                lowMedium: {
+                    avgMotionHours: 8,
+                    idleHours: 16,
+                    motionFactor: 1.0,
+                    idleFactor: 0.5,
+                    description: "Moderate activity during business hours, quiet otherwise.",
+                    examples: "Office corridors, meeting rooms, storage facilities with daily operations, secondary entrances",
+                    notes: "Benefits from business hours scheduling and potential weekend reductions"
                 },
                 medium: {
                     avgMotionHours: 12,
                     idleHours: 12,
                     motionFactor: 1.0,
-                    idleFactor: 0.4
+                    idleFactor: 0.6,
+                    description: "Regular activity throughout day with quieter nighttime periods.",
+                    examples: "Retail floors, school hallways, office lobbies, restaurant dining areas, hotel reception",
+                    notes: "Standard profile for most business environments with regular hours"
+                },
+                mediumHigh: {
+                    avgMotionHours: 16,
+                    idleHours: 8,
+                    motionFactor: 1.0,
+                    idleFactor: 0.7,
+                    description: "Consistent activity with brief quiet periods.",
+                    examples: "Busy retail locations, transportation waiting areas, hospital corridors, casino floors",
+                    notes: "Higher baseline bitrate needed due to extended activity periods"
                 },
                 high: {
                     avgMotionHours: 20,
                     idleHours: 4,
                     motionFactor: 1.0,
-                    idleFactor: 0.6
+                    idleFactor: 0.8,
+                    description: "Constant activity with minimal downtime.",
+                    examples: "Main entrances, busy street intersections, transit stations, airport security checkpoints",
+                    notes: "Limited opportunity for bitrate reduction, even during off-hours"
+                },
+                veryHigh: {
+                    avgMotionHours: 23,
+                    idleHours: 1,
+                    motionFactor: 1.0,
+                    idleFactor: 0.9,
+                    description: "Non-stop activity with almost no idle time.",
+                    examples: "Major intersections, emergency room entrances, 24-hour retail, busy transit hubs",
+                    notes: "Recommend CBR encoding as VBR offers minimal benefit with constant motion"
+                },
+                custom: {
+                    configurable: true,
+                    description: "User-defined motion profile with custom hour distribution",
+                    notes: "Allows precise tuning for specific environments with unique activity patterns"
+                },
+                // Special purpose profiles
+                dayOnly: {
+                    avgMotionHours: 10,
+                    idleHours: 14,
+                    activePeriod: "06:00-20:00",
+                    motionFactor: 1.0,
+                    idleFactor: 0.3,
+                    description: "Active only during daytime business hours.",
+                    examples: "Banks, government offices, day-shift manufacturing",
+                    notes: "Can be paired with scheduled recording to avoid unnecessary nighttime storage"
+                },
+                nightOnly: {
+                    avgMotionHours: 10,
+                    idleHours: 14,
+                    activePeriod: "20:00-06:00",
+                    motionFactor: 1.0,
+                    idleFactor: 0.3,
+                    description: "Active primarily during overnight hours.",
+                    examples: "Night clubs, 24-hour manufacturing, overnight shipping facilities",
+                    notes: "Inverse of day-only profile, with potential for daytime quality reduction"
+                },
+                rushHours: {
+                    avgMotionHours: 6,
+                    idleHours: 18,
+                    activePeriods: ["07:00-09:00", "16:00-20:00"],
+                    motionFactor: 1.0,
+                    idleFactor: 0.4,
+                    description: "Concentrated activity during morning and evening rush periods.",
+                    examples: "Transit stations, commuter areas, school entrances, shift-change areas",
+                    notes: "Benefits from scheduled quality changes for peak times"
                 }
             },
         
             framerateScaling: function(fps) {
                 const baseline = 30;
-                return Math.pow(fps / baseline, 0.9); // non-linear scaling
+                if (fps < 10) return Math.pow(fps / baseline, 1.1); // steeper penalty
+                return Math.pow(fps / baseline, 0.95);              // near-linear otherwise
+                // This penalizes low-fps configurations more, which reflects real-world inefficiencies 
+                // (low-fps has fewer I-frames to work with, worse motion comp)
             }
         },
         raidMinDrives: {
@@ -465,35 +574,78 @@ const CameraServerSizer = {
             motionProfiles,
             framerateScaling
         } = this.config.bitrateFactors;
-    
+
         const resolutionFactor = resolutions[resolution];
         const codec = compressionMap[compression];
         const motionProfile = motionProfiles[motionProfileKey];
-    
+
         if (!resolutionFactor || !codec || !motionProfile) {
             throw new Error(`Unsupported resolution (${resolution}), compression (${compression}), or motion profile (${motionProfileKey})`);
         }
-    
-        // Get VBR efficiency (for motion and idle)
+
+        // Handle custom profile case
+        if (motionProfileKey === 'custom' && motionProfile.configurable) {
+            // Return early or use custom calculation logic
+            // This would connect to a UI where users define their own hours
+            if (typeof this.getCustomProfileBitrate === 'function') {
+                return this.getCustomProfileBitrate(resolution, compression, frameRate);
+            }
+        }
+
         const isVBR = codec.mode === 'VBR';
         const compressionFactor = codec.factor;
-        const motionEfficiency = isVBR ? codec.efficiency.motion : 1;
-        const idleEfficiency = isVBR ? codec.efficiency.idle : 1;
-    
+        const motionScalar = isVBR ? codec.efficiency?.motion || 1 : 1;
+        const idleScalar = isVBR ? codec.efficiency?.idle || 1 : 1;
+
         const fpsFactor = typeof framerateScaling === 'function'
             ? framerateScaling(frameRate)
             : frameRate / 30;
-    
-        // Bitrate per camera (weighted between motion and idle)
-        const motionHours = motionProfile.avgMotionHours;
-        const idleHours = motionProfile.idleHours;
-    
-        const motionBitrate = resolutionFactor * compressionFactor * motionEfficiency * fpsFactor;
-        const idleBitrate   = resolutionFactor * compressionFactor * idleEfficiency   * fpsFactor;
-    
+
+        // Raw bitrates
+        let motionBitrate = resolutionFactor * compressionFactor * motionScalar * fpsFactor;
+        let idleBitrate = resolutionFactor * compressionFactor * idleScalar * fpsFactor;
+
+        // Apply motion profile-specific factors if they exist
+        if (motionProfile.motionFactor) {
+            motionBitrate *= motionProfile.motionFactor;
+        }
+        if (motionProfile.idleFactor) {
+            idleBitrate *= motionProfile.idleFactor;
+        }
+
+        // Enforce minimum bitrate floors (Mbps)
+        const minBitrateByResolution = {
+            '720p': 0.75,
+            '1080p': 1.0,
+            '2K': 1.5,
+            '4K': 3.0,
+            '8K': 5.0
+        };
+
+        const minMotion = minBitrateByResolution[resolution] || 0.5;
+        const minIdle = minMotion * 0.25;
+
+        motionBitrate = Math.max(motionBitrate, minMotion);
+        idleBitrate = Math.max(idleBitrate, minIdle);
+
+        // Handle special time-based profiles
+        if (motionProfile.activePeriod || motionProfile.activePeriods) {
+            // For profiles with specific active times, we could use a more detailed calculation
+            // But for now, we'll use the simplified hours approach
+            return parseFloat(((motionBitrate * motionProfile.avgMotionHours) + 
+                            (idleBitrate * motionProfile.idleHours)) / 24).toFixed(2);
+        }
+
+        // Add scene complexity factor if present
+        let sceneComplexityFactor = 1.0;
+        if (this.sceneComplexity && this.sceneComplexityFactors) {
+            sceneComplexityFactor = this.sceneComplexityFactors[this.sceneComplexity] || 1.0;
+        }
+
         const weightedBitrate =
-            ((motionBitrate * motionHours) + (idleBitrate * idleHours)) / 24;
-    
+            (((motionBitrate * motionProfile.avgMotionHours) + 
+            (idleBitrate * motionProfile.idleHours)) / 24) * sceneComplexityFactor;
+
         return parseFloat(weightedBitrate.toFixed(2)); // Mbps
     },
     

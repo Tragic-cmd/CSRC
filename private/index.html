@@ -10,7 +10,7 @@
 <body>
   <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
   <div class="sidebar" id="sidebar">
-    <img src="/tragicstudios.ico" alt="Tragic Studios" />
+    <img src="/tragicstudios.svg" alt="Tragic Studios" />
     <h3>Saved Configurations</h3>
     <div id="sidebar-configurations"></div>
   </div>
@@ -30,6 +30,7 @@
     <div class="form-group">
         <label for="siteName">Site Name:</label>
         <input type="text" id="siteNameInput" placeholder="Enter site name" required>
+        <small class="form-text text-muted">Unique identifier for this camera deployment.</small>
     </div>
     <form id="sizingForm">
     
@@ -39,47 +40,67 @@
                 <div class="form-group">
                     <label for="cameraCount">Number of Cameras:</label>
                     <input type="number" id="cameraCount" min="1" value="20">
+                    <small class="form-text text-muted">Total camera count; directly impacts storage, bandwidth, and licensing requirements.</small>
                 </div>
 
                 <div class="form-group">
                     <label for="resolution">Camera Resolution:</label>
                     <select id="resolution">
-                        <option value="720p">720p (HD)</option>
-                        <option value="1080p" selected>1080p (Full HD)</option>
-                        <option value="2K">2K (1440p)</option>
-                        <option value="4K">4K (2160p)</option>
-                        <option value="8K">8K (4320p)</option>
+                        <option value="720p">720p (1280×720) - HD - 0.9MP</option>
+                        <option value="1080p" selected>1080p (1920×1080) - Full HD - 2.1 MP</option>
+                        <option value="2K">2K (2560×1440) - Quad HD - 3.7 MP</option>
+                        <option value="4K">4K (3840×2160) - Ultra HD - 8.3 MP</option>
+                        <option value="8K">8K (7680×4320) - Super Hi-Vision - 33.2 MP</option>
                     </select>
+                    <small class="form-text text-muted">The pixel dimensions of video captured (e.g., 1080p, 4K). Higher resolutions provide more detail but require more resources.</small>
                 </div>
 
                 <div class="form-group">
                     <label for="compression">Compression Codec:</label>
                     <select id="compression">
-                        <option value="H.264" selected>H.264 (AVC)</option>
-                        <option value="H.265">H.265 (HEVC)</option>
-                        <option value="H.266">H.266 (VVC)</option>
+                        <option value="MJPEG">MJPEG (High bandwidth, no inter-frame compression)</option>
+                        <option value="H.264" selected>H.264 (AVC) - Standard CBR</option>
+                        <option value="H.264+">H.264+ (Smart AVC with improved efficiency)</option>
+                        <option value="H.265">H.265 (HEVC) - VBR with 30% reduction</option>
+                        <option value="H.265_CBR">H.265 (HEVC) - CBR mode</option>
+                        <option value="H.265+">H.265+ (Smart HEVC with enhanced efficiency)</option>
+                        <option value="H.266">H.266 (VVC) - Next-gen codec with 55% reduction</option>
                     </select>
+                    <small class="form-text text-muted">The algorithm used to compress video data (e.g., H.264, H.265/HEVC, MJPEG). Modern codecs achieve better compression but may require more processing power.</small>
                 </div>
 
                 <div class="form-group">
                     <label for="frameRate">Frame Rate (fps):</label>
                     <select id="frameRate">
-                        <option value="5">5 fps</option>
-                        <option value="10">10 fps</option>
-                        <option value="15" selected>15 fps</option>
-                        <option value="20">20 fps</option>
-                        <option value="30">30 fps</option>
-                        <option value="60">60 fps</option>
+                        <option value="5">5 fps - Very slow motion</option>
+                        <option value="8">8 fps - Slow motion</option>
+                        <option value="10">10 fps - Reduced speed</option>
+                        <option value="15" selected>15 fps - Standard</option>
+                        <option value="20">20 fps - Enhanced</option>
+                        <option value="25">25 fps - Smooth</option>
+                        <option value="30">30 fps - High quality</option>
+                        <option value="60">60 fps - Professional grade</option>
                     </select>
+                    <small class="form-text text-muted">The number of frames captured per second. Higher frame rates result in smoother motion but increase resource usage.</small>
                 </div>
 
                 <div class="form-group">
                     <label for="motionActivity">Scene Motion Activity:</label>
                     <select id="motionActivity">
-                        <option value="low">Low (e.g., warehouse, office)</option>
-                        <option value="medium" selected>Medium (e.g., retail, school)</option>
-                        <option value="high">High (e.g., busy street, entrance)</option>
+                        <option value="veryLow">Very Low - 2h motion/day (Server rooms, emergency exits)</option>
+                        <option value="low">Low - 4h motion/day (Warehouses, office after hours)</option>
+                        <option value="lowMedium">Low-Medium - 8h motion/day (Office corridors, secondary entrances)</option>
+                        <option value="medium" selected>Medium - 12h motion/day (Retail, school hallways, lobbies)</option>
+                        <option value="mediumHigh">Medium-High - 16h motion/day (Busy retail, hospital corridors)</option>
+                        <option value="high">High - 20h motion/day (Main entrances, busy streets, transit stations)</option>
+                        <option value="veryHigh">Very High - 23h motion/day (24/7 locations, emergency entrances)</option>
+                        <optgroup label="Special Profiles">
+                            <option value="dayOnly">Daytime Only - 10h motion/day (Banks, offices: 06:00-20:00)</option>
+                            <option value="nightOnly">Nighttime Only - 10h motion/day (Clubs, night shifts: 20:00-06:00)</option>
+                            <option value="rushHours">Rush Hours - 6h motion/day (Transit: morning/evening peaks)</option>
+                        </optgroup>
                     </select>
+                    <small class="form-text text-muted">The amount of movement in the camera view. High motion can increase storage needs by 2-3x compared to static scenes.</small>
                 </div>
             </div>
 
@@ -92,6 +113,7 @@
                         <option value="24/7" selected>Continuous (24/7)</option>
                         <option value="custom">Custom Hours per Day</option>
                     </select>
+                    <small class="form-text text-muted">Determines when video is recorded; continuous uses more storage while motion/event-based significantly reduces storage needs.</small>
                 </div>
 
                 <div class="form-group" id="hoursPerDayGroup" style="display: none;">
@@ -102,6 +124,7 @@
                 <div class="form-group">
                     <label for="retentionDays">Retention Period (days):</label>
                     <input type="number" id="retentionDays" min="1" value="30">
+                    <small class="form-text text-muted">Number of days to keep recorded footage before deletion; directly proportional to required storage capacity.</small>
                 </div>
             </div>
 
@@ -117,6 +140,7 @@
                         <option value="16" selected>16 TB</option>
                         <option value="20">20 TB</option>
                     </select>
+                    <small class="form-text text-muted">Total raw storage capacity before RAID or formatting; larger drives provide more storage but may increase failure recovery time.</small>
                 </div>
 
                 <div class="form-group">
@@ -126,16 +150,19 @@
                         <option value="RAID6" selected>RAID 6</option>
                         <option value="RAID10">RAID 10</option>
                     </select>
+                    <small class="form-text text-muted">Determines data redundancy and performance characteristics; higher levels provide better protection but reduce usable capacity.</small>
                 </div>
 
                 <div class="form-group">
                     <label for="storageBuffer">Storage Buffer (%):</label>
                     <input type="number" id="storageBuffer" min="0" max="100" value="20">
+                    <small class="form-text text-muted">Reserved capacity to prevent storage saturation; recommended 10-20% buffer improves system performance and prevents unexpected outages.</small>
                 </div>
 
                 <div class="form-group">
                     <label for="filesystemOverhead">Filesystem Overhead (%):</label>
                     <input type="number" id="filesystemOverhead" min="0" max="20" value="5">
+                    <small class="form-text text-muted">Space consumed by filesystem metadata and journaling; typically 3-8% depending on filesystem type and configuration.</small>
                 </div>
             </div>
 
@@ -145,15 +172,17 @@
                 <div class="form-group">
                     <label for="maxCamerasPerServer">Max Cameras per Server:</label>
                     <input type="number" id="maxCamerasPerServer" min="1" value="100">
+                    <small class="form-text text-muted">Maximum number of camera streams a single server can handle; limit depends on resolution, frame rate, and server specifications.</small>
                 </div>
 
                 <div class="form-group">
                     <label for="hardwareAcceleration">Hardware Acceleration:</label>
                     <select id="hardwareAcceleration">
-                        <option value="none">None (Software Only)</option>
-                        <option value="partial" selected>Partial (CPU+GPU)</option>
-                        <option value="full">Full (GPU-Based)</option>
+                        <option value="none">None (Software Only) Uses only your CPU for processing.</option>
+                        <option value="partial" selected>Partial (CPU+GPU) Recommended for general use.</option>
+                        <option value="full">Full (GPU-Based) Requires a compatible GPU.</option>
                     </select>
+                    <small class="form-text text-muted">Uses specialized GPU/CPU features to improve encoding performance; can significantly reduce CPU load and increase camera capacity per server.</small>
                 </div>
             </div>
 

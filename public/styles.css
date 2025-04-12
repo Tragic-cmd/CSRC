@@ -1,6 +1,6 @@
 /* Global Variables */
 :root {
-  --bg-light: #f5f7f9;
+  --bg-light: rgb(50, 207, 255);
   --bg-dark: #121212;
   --text-light: #333;
   --text-dark: #f5f5f5;
@@ -33,10 +33,10 @@ body.dark-mode {
 .container {
   max-width: 1600px;
   margin: auto;
-  background-color: white;
+  background-color: rgb(191, 240, 255);
   padding: 24px;
   border-radius: 10px;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 20px rgba(70, 255, 230, 0.1);
   transition: background-color 0.3s;
 }
 
@@ -114,12 +114,13 @@ body.dark-mode .warning-message {
 h1, h2, h3, h4 {
   color: inherit;
   margin-top: 2em;
+  color: #1b7a7a
 }
 
 /* Buttons Styling */
 .toggle-theme, .profile-btn, .logout-btn {
   background-color: var(--primary);
-  color: white;
+  color: rgb(191, 240, 255);;
   border: none;
   padding: 8px 16px;
   border-radius: 5px;
@@ -147,6 +148,10 @@ label {
   font-weight: 600;
 }
 
+.form-text.text-muted {
+  color: #2980b9 !important; /* Red color */
+}
+
 /* Validation Styling */
 input.input-error {
   border-color: var(--danger);
@@ -160,7 +165,7 @@ input.input-error {
 /* General Button Styling */
 .button {
   background-color: var(--primary);
-  color: white;
+  color: rgb(191, 240, 255);;
   border: none;
   padding: 6px 10px;
   font-size: 0.875rem;
@@ -199,7 +204,7 @@ input.input-error {
   margin-top: 40px;
   padding: 16px;
   border-left: 5px solid var(--primary);
-  background-color: #eaf4ff;
+  background-color: rgba(52, 152, 219, 0.5);
   border-radius: 6px;
 }
 
@@ -239,7 +244,7 @@ input.input-error {
   left: 0;
   height: 100vh;
   width: 260px;
-  background-color: #f8f9fa;
+  background-color: rgb(191, 240, 255);;
   border-right: 1px solid #ddd;
   padding: 20px;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
@@ -276,7 +281,7 @@ input.input-error {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #f0f0f0;
+  background-color: rgb(50, 207, 255);;
   padding: 10px;
   border-radius: 8px;
   margin-bottom: 15px;
@@ -305,7 +310,7 @@ input.input-error {
 }
 
 .dark-mode .config-name {
-  color: #fff;
+  color: #2980b9;
 }
 
 /* Sidebar Toggle Button */
@@ -313,8 +318,8 @@ input.input-error {
   position: fixed;
   top: 10px;
   left: 10px;
-  background-color: #007bff;
-  color: white;
+  background-color: rgb(50, 207, 255);
+  color: black;
   padding: 8px 12px;
   border: none;
   border-radius: 4px;
@@ -337,7 +342,7 @@ input.input-error {
 .dark-mode .sidebar {
   background-color: #121212;
   border-right: 1px solid #333;
-  color: #eee;
+  color: #2980b9;
 }
 
 .dark-mode .sidebar button {
