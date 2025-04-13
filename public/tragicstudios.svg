@@ -2,7 +2,7 @@
 
 <svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="256.000000pt" height="256.000000pt" viewBox="0 0 256.000000 256.000000" preserveAspectRatio="xMidYMid meet">
 
-<g transform="translate(0.000000,256.000000) scale(0.100000,-0.100000)" class="hsm_000000" style="fill:#000000" stroke="none">
+<g transform="translate(0.000000,256.000000) scale(0.100000,-0.100000)" class="hsm_000000" style="fill:#1b7a7a" stroke="none">
 <path d="M1724 2393 c14 -90 17 -163 9 -232 l-8 -73 -50 -20 c-61 -24 -150
 -19 -201 13 -18 11 -67 56 -107 100 -41 43 -77 79 -80 79 -4 0 -7 -7 -7 -15 0
 -27 -82 -154 -132 -204 -68 -68 -178 -122 -259 -128 -35 -2 -70 0 -77 5 -17
@@ -128,4 +128,5 @@
 <path d="M1470 395 c0 -14 5 -25 10 -25 6 0 10 2 10 4 0 2 3 11 6 19 3 8 -2
 17 -10 20 -12 5 -16 0 -16 -18z"></path>
 </g>
-<style>.hsm_000000{fill:#000000;} @media (prefers-color-scheme: dark) { .hsm_000000{fill:#2980b9;} }</style></svg>
+<style>.hsm_000000{fill:#1b7a7a;} </style>
+</svg>

@@ -11,8 +11,9 @@
     <div class="container">
         <div style="display: flex; justify-content: flex-end; gap: 10px;">
             <button class="toggle-theme">Toggle Dark Mode</button>
-            <a href="/" class="button">Camera Sizing Tool</a>
+            <button class="admin-btn" onclick="window.location.href='/'">Camera Sizing Tool</button>
             <button class="profile-btn" onclick="window.location.href='/profile'">Profile</button>
+            <button class="logout-btn" onclick="window.location.href='/logout'">Logout</button>
         </div>
         <div class="header">
             <h2>Admin Panel - User Management</h2>
@@ -43,7 +44,7 @@
         </div>
 
         <!-- Refresh Button -->
-        <button onclick="fetchUsers()" class="button">Refresh Users</button>
+        <button onclick="fetchUsers()" class="admin-btn">Refresh Users</button>
     </div>
 
     <script>
@@ -126,10 +127,10 @@
                                     ${user.profile_picture ? `<img src="${user.profile_picture}" width="50" class="profile-pic">` : "No Image"}
                                 </td>
                                 <td>
-                                    <button class="button update-btn" onclick="updateUser(${user.id})">Update</button>
+                                    <button class="load-btn" onclick="updateUser(${user.id})">Update</button>
                                 </td>
                                 <td>
-                                    <button class="button delete-btn" onclick="deleteUser(${user.id})">Delete</button>
+                                    <button class="delete-btn" onclick="deleteUser(${user.id})">Delete</button>
                                 </td>
                             </tr>
                         `;

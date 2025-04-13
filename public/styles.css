@@ -10,6 +10,7 @@
   --danger: #e74c3c;
   --warning: #f44336;
   --border: #ddd;
+  --load-button: #00bd6e;
 }
 
 /* Body Styling */
@@ -118,7 +119,7 @@ h1, h2, h3, h4 {
 }
 
 /* Buttons Styling */
-.toggle-theme, .profile-btn, .logout-btn {
+.toggle-theme, .profile-btn, .admin-btn, .logout-btn {
   background-color: var(--primary);
   color: rgb(191, 240, 255);;
   border: none;
@@ -129,7 +130,7 @@ h1, h2, h3, h4 {
 }
 
 /* Button Hover State */
-.toggle-theme:hover, .profile-btn:hover, .logout-btn:hover {
+.toggle-theme:hover, .profile-btn:hover, .admin-btn:hover, .logout-btn:hover {
   background-color: var(--primary-dark);
 }
 
@@ -149,7 +150,7 @@ label {
 }
 
 .form-text.text-muted {
-  color: #2980b9 !important; /* Red color */
+  color: #2980b9 !important; 
 }
 
 /* Validation Styling */
@@ -165,7 +166,7 @@ input.input-error {
 /* General Button Styling */
 .button {
   background-color: var(--primary);
-  color: rgb(191, 240, 255);;
+  color: rgb(191, 240, 255);
   border: none;
   padding: 6px 10px;
   font-size: 0.875rem;
@@ -178,17 +179,27 @@ input.input-error {
 }
 
 .button:hover {
-  background-color: var(--primary-dark);
+  background-color: rgb(191, 240, 255);
   text-decoration: none;
 }
 
 /* Specific Button Styles */
 .load-button {
-  background-color: var(--primary);
+  background-color: var(--load-button);
+}
+.dark-mode .load-button {
+  color: var(--load-button);
 }
 
 .update-btn {
   background-color: var(--primary);
+}
+
+.load-btn {
+  background-color: var(--primary);
+}
+.load-btn:hover {
+  background-color: var(--primary-dark);
 }
 
 .delete-btn {
@@ -355,6 +366,9 @@ input.input-error {
 }
 
 .dark-mode .sidebar .delete-button {
+  background-color: #b71c1c;
+}
+.sidebar .delete-button {
   background-color: #b71c1c;
 }
 

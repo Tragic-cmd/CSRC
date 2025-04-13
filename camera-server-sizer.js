@@ -4,7 +4,7 @@ const CameraServerSizer = {
     config: {
         bitrateFactors: {
             resolutions: {
-                '720p': 2.0,     // baseline at 30fps, H.264, medium motion
+                '720p': 2.5,     // baseline at 30fps, H.264, medium motion
                 '1080p': 4.0,
                 '2K': 6.0,
                 '4K': 12.0,
@@ -12,14 +12,18 @@ const CameraServerSizer = {
             },
             compression: {
                 'MJPEG': {
-                    factor: 2.5,
+                    factor: 4.0,
                     mode: 'CBR',
-                    notes: 'High bandwidth codec, no inter-frame compression'
+                    notes: 'MJPEG is extremely inefficient and rarely recommended except for legacy compatibility.'
                 },
                 'H.264': {
                     factor: 1.0,
-                    mode: 'CBR',   // default assumption
-                    notes: 'Baseline codec used as reference point'
+                    mode: 'VBR',
+                    efficiency: {
+                        motion: 1.0,
+                        idle: 0.4 // idle is usually far smaller for H.264 VBR
+                    },
+                    notes: 'Standard H.264 with motion-based variation (VBR modeled)'
                 },
                 'H.264+': {
                     factor: 0.9,
@@ -63,8 +67,8 @@ const CameraServerSizer = {
                 veryLow: {
                     avgMotionHours: 2,
                     idleHours: 22,
-                    motionFactor: 1.0,
-                    idleFactor: 0.3,
+                    motionFactor: 0.8,
+                    idleFactor: 0.1,
                     description: "Extremely limited activity. Only occasional movement.",
                     examples: "Secure storage areas, server rooms, vacant buildings, emergency exits",
                     notes: "Ideal for motion-based recording with significant storage savings"
@@ -72,8 +76,8 @@ const CameraServerSizer = {
                 low: {
                     avgMotionHours: 4,
                     idleHours: 20,
-                    motionFactor: 1.0,
-                    idleFactor: 0.4,
+                    motionFactor: 0.9,
+                    idleFactor: 0.15,
                     description: "Limited daily activity with long periods of inactivity.",
                     examples: "Warehouses, offices after hours, utility rooms, archive storage, parking garages (overnight)",
                     notes: "Good candidate for scheduled quality/framerate reduction during off-hours"
@@ -82,7 +86,7 @@ const CameraServerSizer = {
                     avgMotionHours: 8,
                     idleHours: 16,
                     motionFactor: 1.0,
-                    idleFactor: 0.5,
+                    idleFactor: 0.2,
                     description: "Moderate activity during business hours, quiet otherwise.",
                     examples: "Office corridors, meeting rooms, storage facilities with daily operations, secondary entrances",
                     notes: "Benefits from business hours scheduling and potential weekend reductions"
@@ -90,8 +94,8 @@ const CameraServerSizer = {
                 medium: {
                     avgMotionHours: 12,
                     idleHours: 12,
-                    motionFactor: 1.0,
-                    idleFactor: 0.6,
+                    motionFactor: 1.1,
+                    idleFactor: 0.25,
                     description: "Regular activity throughout day with quieter nighttime periods.",
                     examples: "Retail floors, school hallways, office lobbies, restaurant dining areas, hotel reception",
                     notes: "Standard profile for most business environments with regular hours"
@@ -99,8 +103,8 @@ const CameraServerSizer = {
                 mediumHigh: {
                     avgMotionHours: 16,
                     idleHours: 8,
-                    motionFactor: 1.0,
-                    idleFactor: 0.7,
+                    motionFactor: 1.2,
+                    idleFactor: 0.3,
                     description: "Consistent activity with brief quiet periods.",
                     examples: "Busy retail locations, transportation waiting areas, hospital corridors, casino floors",
                     notes: "Higher baseline bitrate needed due to extended activity periods"
@@ -108,8 +112,8 @@ const CameraServerSizer = {
                 high: {
                     avgMotionHours: 20,
                     idleHours: 4,
-                    motionFactor: 1.0,
-                    idleFactor: 0.8,
+                    motionFactor: 1.3,
+                    idleFactor: 0.4,
                     description: "Constant activity with minimal downtime.",
                     examples: "Main entrances, busy street intersections, transit stations, airport security checkpoints",
                     notes: "Limited opportunity for bitrate reduction, even during off-hours"
@@ -117,8 +121,8 @@ const CameraServerSizer = {
                 veryHigh: {
                     avgMotionHours: 23,
                     idleHours: 1,
-                    motionFactor: 1.0,
-                    idleFactor: 0.9,
+                    motionFactor: 1.4,
+                    idleFactor: 0.5,
                     description: "Non-stop activity with almost no idle time.",
                     examples: "Major intersections, emergency room entrances, 24-hour retail, busy transit hubs",
                     notes: "Recommend CBR encoding as VBR offers minimal benefit with constant motion"
@@ -583,13 +587,9 @@ const CameraServerSizer = {
             throw new Error(`Unsupported resolution (${resolution}), compression (${compression}), or motion profile (${motionProfileKey})`);
         }
 
-        // Handle custom profile case
-        if (motionProfileKey === 'custom' && motionProfile.configurable) {
-            // Return early or use custom calculation logic
-            // This would connect to a UI where users define their own hours
-            if (typeof this.getCustomProfileBitrate === 'function') {
-                return this.getCustomProfileBitrate(resolution, compression, frameRate);
-            }
+        // Custom profile handler
+        if (motionProfileKey === 'custom' && motionProfile.configurable && typeof this.getCustomProfileBitrate === 'function') {
+            return this.getCustomProfileBitrate(resolution, compression, frameRate);
         }
 
         const isVBR = codec.mode === 'VBR';
@@ -601,52 +601,88 @@ const CameraServerSizer = {
             ? framerateScaling(frameRate)
             : frameRate / 30;
 
-        // Raw bitrates
+        // Raw bitrate calculation
         let motionBitrate = resolutionFactor * compressionFactor * motionScalar * fpsFactor;
         let idleBitrate = resolutionFactor * compressionFactor * idleScalar * fpsFactor;
 
-        // Apply motion profile-specific factors if they exist
-        if (motionProfile.motionFactor) {
-            motionBitrate *= motionProfile.motionFactor;
-        }
-        if (motionProfile.idleFactor) {
-            idleBitrate *= motionProfile.idleFactor;
+        // Apply motion profile multipliers
+        if (motionProfile.motionFactor) motionBitrate *= motionProfile.motionFactor;
+        if (motionProfile.idleFactor) idleBitrate *= motionProfile.idleFactor;
+
+        // Scene entropy modifier (for idle stream VBR)
+        if (isVBR && this.sceneComplexityFactors) {
+            const idlePenalty = this.sceneComplexityFactors[this.sceneComplexity] || 1;
+            idleBitrate *= idlePenalty;
         }
 
-        // Enforce minimum bitrate floors (Mbps)
-        const minBitrateByResolution = {
-            '720p': 0.75,
-            '1080p': 1.0,
-            '2K': 1.5,
-            '4K': 3.0,
-            '8K': 5.0
+        // CBR = same bitrate always
+        if (!isVBR) idleBitrate = motionBitrate;
+
+        // Adaptive minimum bitrate floor based on resolution, codec, and framerate
+        const getAdaptiveMinBitrate = (res, codecName, fps) => {
+            const baseFloors = {
+                '720p': 0.75,
+                '1080p': 1.0,
+                '1440p': 1.3,
+                '2K': 1.4,
+                '4K': 2.8,
+                '5K': 3.8,
+                '8K': 5.5,
+                '12K': 9.5
+            };
+
+            // Safe default if unknown resolution
+            let base = baseFloors[res] || 0.75;
+
+            // Framerate influence: less than linear scaling, matches perceptual quality needs
+            const fpsFactor = Math.pow(fps / 10, 0.65); // 10 fps baseline
+            base *= fpsFactor;
+
+            // Codec efficiency modifiers — smaller = more efficient
+            const codecEfficiency = {
+                'MJPEG': 1.4,
+                'H.264': 1.0,
+                'H.264+': 0.85,
+                'H.265': 0.70,
+                'H.265+': 0.60,
+                'H.266/VVC': 0.50,
+                'AV1': 0.55
+            };
+
+            const efficiency = codecEfficiency[codecName] || 1.0;
+            base *= efficiency;
+
+            // Scene complexity adjustments
+            if (typeof this.sceneComplexity === 'string') {
+                const complexityFactor = {
+                    low: 0.95,
+                    medium: 1.0,
+                    high: 1.15,
+                    extreme: 1.3
+                };
+                base *= complexityFactor[this.sceneComplexity] || 1.0;
+            }
+
+            return parseFloat(base.toFixed(2));
         };
 
-        const minMotion = minBitrateByResolution[resolution] || 0.5;
+        const minMotion = getAdaptiveMinBitrate.call(this, resolution, compression, frameRate);
         const minIdle = minMotion * 0.25;
 
+        // Enforce bitrate floors
         motionBitrate = Math.max(motionBitrate, minMotion);
         idleBitrate = Math.max(idleBitrate, minIdle);
 
-        // Handle special time-based profiles
-        if (motionProfile.activePeriod || motionProfile.activePeriods) {
-            // For profiles with specific active times, we could use a more detailed calculation
-            // But for now, we'll use the simplified hours approach
-            return parseFloat(((motionBitrate * motionProfile.avgMotionHours) + 
-                            (idleBitrate * motionProfile.idleHours)) / 24).toFixed(2);
-        }
+        const motionHours = motionProfile.avgMotionHours ?? 12;
+        const idleHours = motionProfile.idleHours ?? (24 - motionHours);
 
-        // Add scene complexity factor if present
-        let sceneComplexityFactor = 1.0;
-        if (this.sceneComplexity && this.sceneComplexityFactors) {
-            sceneComplexityFactor = this.sceneComplexityFactors[this.sceneComplexity] || 1.0;
-        }
+        // Final scene adjustment after weighting
+        const baseBitrate = ((motionBitrate * motionHours) + (idleBitrate * idleHours)) / 24;
+        const sceneFactor = this.sceneComplexityFactors?.[this.sceneComplexity] || 1.0;
+        const finalBitrate = baseBitrate * sceneFactor;
 
-        const weightedBitrate =
-            (((motionBitrate * motionProfile.avgMotionHours) + 
-            (idleBitrate * motionProfile.idleHours)) / 24) * sceneComplexityFactor;
-
-        return parseFloat(weightedBitrate.toFixed(2)); // Mbps
+        // Apply final floor (same as motion)
+        return parseFloat(Math.max(finalBitrate, minMotion).toFixed(2)); // Mbps
     },
     
     // Get framerate multiplier for bitrate calculation
@@ -662,10 +698,9 @@ const CameraServerSizer = {
     // Calculate CPU cores needed per camera
     calculateCpuCoresPerCamera: function(resolution, compression, frameRate, hardwareAcceleration, analyticsLevel = 'none', storageType = 'standard') {
         // Base CPU requirements (cores per camera for 1080p, H.264, 30fps, no hardware acceleration)
-        // Updated baseline to reflect latest benchmarks
         let baseCores = 0.18;
         
-        // Resolution multipliers - with accurate scaling based on pixel count
+        // Resolution multipliers - with more accurate scaling based on pixel count
         const resolutionMultipliers = {
             '480p': 0.25,  // 640x480 (0.3MP)
             '720p': 0.45,  // 1280x720 (0.9MP)
@@ -677,10 +712,10 @@ const CameraServerSizer = {
             '8K': 7.0,     // 7680x4320 (33.2MP)
             '12K': 14.0    // 12288x6480 (79.6MP)
         };
-        
+    
         // Get raw resolution multiplier if specified format exists
         let resolutionMultiplier = resolutionMultipliers[resolution] || 1.0;
-        
+    
         // If resolution is specified as dimensions (e.g. "1920x1080")
         if (resolution.includes('x')) {
             const dimensions = resolution.split('x');
@@ -690,21 +725,20 @@ const CameraServerSizer = {
                 resolutionMultiplier = pixelCount / (1920 * 1080);
                 // Apply non-linear scaling for very high resolutions
                 if (resolutionMultiplier > 2) {
-                    // Large resolutions don't scale linearly with pixel count
                     resolutionMultiplier = Math.pow(resolutionMultiplier, 0.85);
                 }
             }
         }
         
-        // Compression complexity multipliers - updated for current generation processors
+        // Compression complexity multipliers - fine-tuned for modern processors
         const compressionMultipliers = {
             'MJPEG': 0.7,   // Simple decompression
             'H.264': 1.0,   // Baseline reference
             'H.264+': 1.1,  // Advanced H.264 with smart encoding features
             'H.265': 1.2,   // More efficient but requires more processing
-            'H.265+': 1.3,  // Smart H.265 variants (Hikvision, etc.)
-            'H.266/VVC': 1.8, // Very complex encoding, still emerging
-            'AV1': 1.6      // Google/Alliance for Open Media codec
+            'H.265+': 1.4,  // Smart H.265 variants (Hikvision, etc.)
+            'H.266/VVC': 1.9, // Emerging codec, more complex encoding
+            'AV1': 1.7      // Next-gen, highly efficient codec (but demanding)
         };
         
         // Framerates don't scale linearly with CPU usage
@@ -715,7 +749,6 @@ const CameraServerSizer = {
             if (fps <= 5) return 0.4; // Low framerates still have overhead
             if (fps <= 15) return 0.7; // Mid-range framerates
             if (fps === baseFrameRate) return 1.0; // Reference point
-            
             // Non-linear scaling for higher framerates
             return Math.pow(fps / baseFrameRate, 0.8);
         }

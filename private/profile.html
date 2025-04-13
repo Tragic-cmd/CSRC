@@ -11,8 +11,9 @@
   <div class="container">
     <div style="display: flex; justify-content: flex-end; gap: 10px;">
       <button class="toggle-theme" onclick="toggleDarkMode()">Toggle Dark Mode</button>
-      <a href="/admin.html" id="adminButton" class="button" style="display: none;">Admin Panel</a>
-      <a href="/" class="button">Camera Sizing Tool</a>
+      <button id="adminButton" class="admin-btn" onclick="window.location.href='/admin.html'">Admin Panel</button>
+      <button class="admin-btn" onclick="window.location.href='/'">Camera Sizing Tool</button>
+      <button class="logout-btn" onclick="window.location.href='/logout'">Logout</button>
     </div>
 
     <h2>User Profile</h2>
