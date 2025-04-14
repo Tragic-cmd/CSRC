@@ -466,8 +466,8 @@
       document.getElementById('retentionDays').value = config.retentionDays;
       document.getElementById('hdSize').value = config.hdSize;
       document.getElementById('redundancyLevel').value = config.redundancyLevel;
-      document.getElementById('storageBuffer').value = config.storageBuffer;
-      document.getElementById('filesystemOverhead').value = config.filesystemOverhead;
+      document.getElementById('storageBuffer').value = (config.storageBuffer * 100).toFixed(0);
+      document.getElementById('filesystemOverhead').value = (config.filesystemOverhead * 100).toFixed(0);
       document.getElementById('maxCamerasPerServer').value = config.maxCamerasPerServer;
       document.getElementById('hardwareAcceleration').value = config.hardwareAcceleration;
     }
