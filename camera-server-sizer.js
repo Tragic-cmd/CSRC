@@ -960,24 +960,24 @@ const CameraServerSizer = {
         let cpuRecommendation;
     
         if (totalCoresNeeded <= 1) {
-            cpuRecommendation = "Low-power single-core processor (e.g., Intel Atom, AMD Ryzen Embedded)";
-        } else if (totalCoresNeeded <= 2) {
-            cpuRecommendation = "Dual-core processor (e.g., Intel Core i3, AMD Ryzen 3)";
-        } else if (totalCoresNeeded <= 4) {
-            cpuRecommendation = "Quad-core server processor (e.g., Intel Xeon E, AMD Ryzen 5)";
-        } else if (totalCoresNeeded <= 8) {
-            cpuRecommendation = "Octa-core server processor (e.g., Intel Xeon E, AMD Ryzen 7)";
-        } else if (totalCoresNeeded <= 16) {
-            cpuRecommendation = "Single socket with AMD EPYC 7002/7003 or Intel Xeon Silver (16+ cores)";
-        } else if (totalCoresNeeded <= 32) {
-            cpuRecommendation = "Single socket with AMD EPYC 7003 or Intel Xeon Gold (32+ cores)";
-        } else if (totalCoresNeeded <= 64) {
-            cpuRecommendation = "Dual socket server with AMD EPYC 7003/9004 or Intel Xeon Gold (64+ cores)";
-        } else if (totalCoresNeeded <= 128) {
-            cpuRecommendation = "Dual socket server with AMD EPYC 9004 or Intel Xeon Platinum (128+ cores)";
-        } else {
-            cpuRecommendation = "Multiple high-core-count dual socket servers with AMD EPYC 9004 or Intel Xeon Platinum (128+ cores per server)";
-        }
+            cpuRecommendation = "Low-power embedded CPU (e.g., Intel Atom x6000, AMD Ryzen Embedded V-series)";
+          } else if (totalCoresNeeded <= 2) {
+            cpuRecommendation = "Dual-core desktop-class CPU (e.g., Intel Core i3-13100, AMD Ryzen 3 5300G)";
+          } else if (totalCoresNeeded <= 4) {
+            cpuRecommendation = "Entry server CPU (e.g., Intel Xeon E-2300, AMD Ryzen 5 Pro)";
+          } else if (totalCoresNeeded <= 8) {
+            cpuRecommendation = "Mid-range server CPU (e.g., Intel Xeon E-2400, AMD Ryzen 7 7700)";
+          } else if (totalCoresNeeded <= 16) {
+            cpuRecommendation = "High-core single-socket CPU (e.g., AMD EPYC 7302P, Intel Xeon Silver 4310)";
+          } else if (totalCoresNeeded <= 32) {
+            cpuRecommendation = "Performance-oriented single socket (e.g., AMD EPYC 7502P, Xeon Gold 5318Y)";
+          } else if (totalCoresNeeded <= 64) {
+            cpuRecommendation = "Dual socket high-performance (e.g., AMD EPYC 7643 x2, Xeon Gold 6448Y)";
+          } else if (totalCoresNeeded <= 128) {
+            cpuRecommendation = "Dual socket ultra-scale server (e.g., AMD EPYC 9654 x2, Intel Xeon Platinum 8490H)";
+          } else {
+            cpuRecommendation = "Multi-node cluster with high-core dual-socket servers (e.g., EPYC 9654 x2 per node, networked via 25/100GbE)";
+          }
     
         // RAM Recommendation
         const totalRamNeeded = results.vmsNeeded * results.ramPerVM;
