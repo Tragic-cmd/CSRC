@@ -1330,14 +1330,14 @@ const CameraServerSizer = {
             }
     
             // Progressive performance and architecture recommendations based on camera density
-            if (results.camerasPerVM > 20) {
+            if (results.camerasPerVM > 20 && results.camerasPerVM < 40) {
                 performanceRecs += `
                     <li><strong>Camera Load Distribution:</strong> Begin distributing cameras across multiple VMs using N+1 redundancy. This balances load and supports failover without compromising real-time processing.</li>
                     <li><strong>Hardware Acceleration:</strong> Start introducing GPU acceleration (e.g., NVIDIA T4, A10, A30, or Intel Quick Sync) to handle motion detection, encoding, and analytics with lower CPU dependency.</li>
                 `;
             }
 
-            if (results.camerasPerVM > 40) {
+            if (results.camerasPerVM > 40 && results.camerasPerVM < 60) {
                 performanceRecs += `
                     <li><strong>Dedicated Video Processing Hosts:</strong> Consider isolating recording/analytics workloads on dedicated VM nodes with pass-through GPU/FPGA acceleration. Use SR-IOV or PCI passthrough for high-throughput, low-latency video handling.</li>
                     <li><strong>Persistent Storage I/O Design:</strong> At this level, aggregate high-performance storage (NVMe RAID10 or SSD-backed SAN/NAS) with dedicated write queues per VM. Plan for burst write loads during high-motion intervals.</li>
@@ -1345,7 +1345,7 @@ const CameraServerSizer = {
                 `;
             }
 
-            if (results.camerasPerVM > 60) {
+            if (results.camerasPerVM > 60 && results.camerasPerVM < 80) {
                 performanceRecs += `
                     <li><strong>Resource Isolation:</strong> Pin CPU cores and memory to each VM to avoid noisy neighbor effects. Use hypervisor features (e.g., CPU affinity, HugePages) to guarantee low-latency resource access.</li>
                     <li><strong>NUMA-Aware Scheduling:</strong> Design VM CPU and memory layout according to NUMA boundaries, especially on multi-socket hosts. Avoid cross-node memory access to sustain performance under load.</li>
@@ -1353,7 +1353,7 @@ const CameraServerSizer = {
                 `;
             }
 
-            if (results.camerasPerVM > 80) {
+            if (results.camerasPerVM > 80 && results.camerasPerVM < 100) {
                 performanceRecs += `
                     <li><strong>High-Density Host Design:</strong> Evaluate whether it's more efficient to scale horizontally (more VMs) rather than vertically at this density. Excessive vertical scale complicates troubleshooting and increases blast radius during failure.</li>
                     <li><strong>Live Migration Readiness:</strong> Disable live migration on high-density VMs unless CPU/GPU resources are mirrored across hosts. Instead, focus on service-level failover mechanisms for minimal disruption.</li>
