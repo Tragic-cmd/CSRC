@@ -848,13 +848,42 @@ const CameraServerSizer = {
                     break;
                     
                 case 'RAID6':
-                    // For RAID6, usable space is N-2 drives
-                    usableCapacityMultiplier = (n) => (n - 2) * hdSizeTB * 0.93; // Account for RAID overhead
-                    
-                    // Calculate required drives based on storage needed
-                    totalDrives = Math.ceil(requiredStorageTB / (hdSizeTB * 0.93)) + 2;
-                    if (totalDrives < minDrives) totalDrives = minDrives;
-                    break;
+                    {
+                        const usablePerDrive = hdSizeTB * 0.93;
+                        const drivesNeeded = Math.ceil(requiredStorageTB / usablePerDrive) + 2;
+                        if (drivesNeeded < minDrives) totalDrives = minDrives;
+                        else totalDrives = drivesNeeded;
+
+                        // Split into arrays of 10 data drives + 2 parity (RAID6)
+                        const raidGroups = [];
+                        let remainingDrives = totalDrives;
+
+                        while (remainingDrives >= 10) {
+                            raidGroups.push(12); // 10 data + 2 parity
+                            remainingDrives -= 10;
+                        }
+
+                        if (remainingDrives > 0) {
+                            const lastGroupSize = remainingDrives + 2;
+                            if (lastGroupSize < minDrives) {
+                                // pad to minimum viable RAID6 group
+                                const paddedSize = minDrives;
+                                raidGroups.push(paddedSize);
+                                totalDrives = raidGroups.reduce((sum, val) => sum + val, 0);
+                            } else {
+                                raidGroups.push(lastGroupSize); // data + 2 parity
+                                totalDrives = raidGroups.reduce((sum, val) => sum + val, 0);
+                            }
+                        }
+
+                        usableCapacityMultiplier = () => {
+                            return raidGroups.reduce((sum, groupSize) => {
+                                return sum + (groupSize - 2) * hdSizeTB * 0.93;
+                            }, 0);
+                        };
+
+                        break;
+                    }
                     
                 case 'RAID10':
                     // For RAID10, usable space is N/2 drives
@@ -870,9 +899,40 @@ const CameraServerSizer = {
                     
                 default:
                     // Default to RAID6
-                    usableCapacityMultiplier = (n) => (n - 2) * hdSizeTB * 0.93;
-                    totalDrives = Math.ceil(requiredStorageTB / (hdSizeTB * 0.93)) + 2;
-                    if (totalDrives < minDrives) totalDrives = minDrives;
+                    {
+                        const usablePerDrive = hdSizeTB * 0.93;
+                        const drivesNeeded = Math.ceil(requiredStorageTB / usablePerDrive) + 2;
+                        if (drivesNeeded < minDrives) totalDrives = minDrives;
+                        else totalDrives = drivesNeeded;
+                
+                        const raidGroups = [];
+                        let remainingDrives = totalDrives;
+                
+                        while (remainingDrives >= 10) {
+                            raidGroups.push(12);
+                            remainingDrives -= 10;
+                        }
+                
+                        if (remainingDrives > 0) {
+                            const lastGroupSize = remainingDrives + 2;
+                            if (lastGroupSize < minDrives) {
+                                const paddedSize = minDrives;
+                                raidGroups.push(paddedSize);
+                                totalDrives = raidGroups.reduce((sum, val) => sum + val, 0);
+                            } else {
+                                raidGroups.push(lastGroupSize);
+                                totalDrives = raidGroups.reduce((sum, val) => sum + val, 0);
+                            }
+                        }
+                
+                        usableCapacityMultiplier = () => {
+                            return raidGroups.reduce((sum, groupSize) => {
+                                return sum + (groupSize - 2) * hdSizeTB * 0.93;
+                            }, 0);
+                        };
+                
+                        break;
+                    }
             }
             
             // Calculate capacities
@@ -1134,11 +1194,12 @@ const CameraServerSizer = {
             // Function to provide RAID benefits
             function getRaidBenefits(raidLevel) {
                 const benefits = {
-                    'RAID0': 'high performance but no redundancy',
-                    'RAID1': 'mirroring for data protection',
-                    'RAID5': 'balanced performance and redundancy',
-                    'RAID6': 'extra fault tolerance with dual-parity',
-                    'RAID10': 'high performance and redundancy (striped mirroring)'
+                    'RAID0': 'high performance but no redundancy - striping only',
+                    'RAID1': 'simple mirroring to provide high data protection and fast recovery',
+                    'RAID5': 'balanced performance and efficient redundancy',
+                    'RAID6': 'dual-parity with auto-grouped 12-drive arrays for optimal performance and resilience',
+                    'RAID10': 'striped mirroring to provide high performance and fault tolerance',
+                    'RAID60': 'dual-parity striped RAID6 arrays to ensure high capacity, performance, and fault tolerance'
                 };
                 return benefits[raidLevel.replace(/\s+/g, '')] || 'optimized redundancy and performance';
             }
@@ -1150,7 +1211,8 @@ const CameraServerSizer = {
                     'RAID1': 'Can tolerate 1 drive failure',
                     'RAID5': 'Can tolerate 1 drive failure',
                     'RAID6': 'Can tolerate up to 2 drive failures',
-                    'RAID10': 'Can tolerate up to 1 drive failure per mirrored pair'
+                    'RAID10': 'Can tolerate up to 1 drive failure per mirrored pair',
+                    'RAID60': 'Tolerates up to 2 drive failures per RAID6 subgroup'
                 };
                 return faultTolerance[raidLevel.replace(/\s+/g, '')] || 'Varies based on configuration';
             }
@@ -1183,26 +1245,30 @@ const CameraServerSizer = {
             document.getElementById('ramRecommendation').textContent = virtualRecs.hostRecommendation.ramRecommendation;
     
             document.getElementById('physicalAnalysis').innerHTML = `
-                <p>To host these VMs efficiently, you will need approximately 
-                <strong>${results.physicalHostsNeeded} physical servers</strong>.</p>
-                <p>We recommend <strong>${virtualRecs.hypervisorRecommendation}</strong> for this workload, with 
-                <strong>${virtualRecs.storageApproach}</strong> for storage. Each physical host should have 
-                <strong>${virtualRecs.hostRecommendation.cpuRecommendation}</strong> and 
-                <strong>${virtualRecs.hostRecommendation.ramRecommendation}</strong>.</p>
+                <p><strong>Estimated Physical Servers:</strong> ${results.physicalHostsNeeded}</p>
+                <p><strong>High Availability Note:</strong> If redundancy and high availability (HA) are required, plan to double the number of physical hosts and ensure storage/network components are also redundant.</p>
+                <p><strong>Recommended Hypervisor:</strong> ${virtualRecs.hypervisorRecommendation}</p>
+                <p><strong>Storage Architecture:</strong> ${virtualRecs.storageApproach}</p>
+                <p><strong>Per-Host Hardware:</strong></p>
+                <ul>
+                    <li><strong>CPU:</strong> ${virtualRecs.hostRecommendation.cpuRecommendation}</li>
+                    <li><strong>RAM:</strong> ${virtualRecs.hostRecommendation.ramRecommendation}</li>
+                </ul>
             `;
     
             // Hardware Acceleration Note
             if (results.hardwareAcceleration !== 'none') {
                 document.getElementById('hwAccelNote').innerHTML = `
                     <div class="note">
-                        <p><strong>Hardware Acceleration Notice:</strong> The calculations assume 
-                        <strong>${results.hardwareAcceleration} hardware acceleration</strong> is enabled for video processing.</p>
+                        <p><strong>Hardware Acceleration Notice:</strong> The following calculations assume that <strong>${results.hardwareAcceleration}</strong> hardware acceleration is enabled for video processing, which can significantly improve processing efficiency and reduce CPU load.</p>
                         <ul>
-                            <li><strong>Ensure compatibility:</strong> Verify that your hardware and software support this acceleration mode.</li>
+                            <li><strong>Ensure Hardware Compatibility:</strong> Verify that both your hardware and software environments are fully compatible with the selected acceleration mode. Consult vendor documentation for supported configurations.</li>
                             ${results.hardwareAcceleration === 'full' ? 
-                            '<li><strong>Full Acceleration:</strong> Requires dedicated server GPUs such as <strong>NVIDIA Tesla, Quadro, or RTX AI-enabled cards</strong>.</li>' :
-                            '<li><strong>Partial Acceleration:</strong> May be available with <strong>integrated GPU (Intel QuickSync) or consumer-grade GPUs (NVIDIA GTX/RTX, AMD Radeon)</strong>.</li>'}
-                            <li><strong>Driver & Codec Support:</strong> Ensure the required GPU drivers and video codecs (H.264, H.265) are installed and optimized.</li>
+                                '<li><strong>Full Acceleration:</strong> Requires dedicated, high-performance server GPUs such as <strong>NVIDIA Tesla, Quadro, or A100 AI-enabled cards</strong>, which provide the necessary compute power for large-scale video analytics and AI-based processing.</li>' :
+                                '<li><strong>Partial Acceleration:</strong> Suitable for lower-end acceleration, available with <strong>integrated GPUs (Intel QuickSync) or consumer-grade GPUs (e.g., NVIDIA GTX/RTX, AMD Radeon)</strong>. These are best suited for video transcoding and basic analytics tasks but may not handle heavy AI workloads effectively.</li>'}
+                            <li><strong>Driver & Codec Compatibility:</strong> Ensure that the necessary GPU drivers, video codecs (H.264, H.265), and hardware-accelerated API libraries (e.g., NVENC, VA-API) are installed and properly configured for optimal performance.</li>
+                            <li><strong>Power Consumption & Cooling:</strong> Dedicated GPUs, especially those used for full hardware acceleration, can significantly increase power consumption and heat generation. Ensure your servers have adequate cooling and sufficient power supply to handle these additional loads.</li>
+                            <li><strong>Software & License Considerations:</strong> Some hardware acceleration features may require additional software licensing (e.g., NVIDIA CUDA, vGPU licenses). Ensure that all necessary licenses are procured and activated.</li>
                         </ul>
                     </div>
                 `;
@@ -1211,47 +1277,157 @@ const CameraServerSizer = {
                 document.getElementById('hwAccelNote').style.display = 'none';
             }
     
-            // Performance Recommendations
-            let performanceRecs = `
-                <li><strong>Network:</strong> Implement a QoS-enabled dedicated VLAN for camera traffic with at least 
-                ${Math.ceil(results.networkBandwidthMbps * results.vmsNeeded / 1000)} Gbps capacity. Deploy redundant switches 
-                with LACP-bonded 10GbE+ connections and configure jumbo frames for optimal throughput.</li>
-                <li><strong>Storage:</strong> Utilize enterprise surveillance-rated NVMe storage in RAID 6 or RAID 10 configuration 
-                with hot spares. Implement tiered storage with 7-10 day retention on primary storage and longer-term archiving on 
-                lower-cost media. Install UPS with graceful shutdown capability.</li>
-                <li><strong>Compute:</strong> Configure over-provisioning protection with at least 20% headroom for CPU/RAM. Enable 
-                CPU pinning with NUMA awareness and dedicated GPU resources where applicable. Implement live migration capability for 
-                maintenance without recording interruption.</li>
-            `;
+            // Calculate total system bandwidth in Gbps
+            const totalBandwidthGbps = (results.networkBandwidthMbps * results.vmsNeeded) / 1000;
+
+            // Classify system size
+            let networkTier = '';
+            if (totalBandwidthGbps < 1) {
+                networkTier = 'small';
+            } else if (totalBandwidthGbps < 5) {
+                networkTier = 'medium';
+            } else {
+                networkTier = 'large';
+            }
+
+            // Performance Recommendations (Dynamic)
+            let performanceRecs = '';
+
+            if (networkTier === 'small') {
+                performanceRecs = `
+                    <li><strong>Network:</strong> Use a dedicated VLAN with QoS prioritization for camera traffic. Ensure minimum 1 Gbps per recording node. 
+                    Redundant switches are recommended. Jumbo frames (MTU 9000) should be enabled if supported.</li>
+
+                    <li><strong>Storage:</strong> Deploy RAID 6 or RAID 10 with surveillance-grade HDDs or SSDs. Consider a single-tier storage model with 7–10 day retention. 
+                    A single global hot spare is sufficient. Include a basic UPS with graceful shutdown configuration.</li>
+
+                    <li><strong>Compute:</strong> Maintain 20% CPU/RAM overhead. Live migration is optional but beneficial. NUMA awareness and CPU pinning are recommended 
+                    for multi-socket systems. No GPU acceleration is typically needed at this scale.</li>
+                `;
+            } else if (networkTier === 'medium') {
+                performanceRecs = `
+                    <li><strong>Network:</strong> Use a dedicated VLAN with LACP-bonded 10GbE links and QoS enforcement. 
+                    Redundant switching fabric is strongly advised. Enable jumbo frames and flow control.</li>
+
+                    <li><strong>Storage:</strong> Use NVMe or high-speed SAS in RAID 6 or RAID 10 with hot spares. Implement tiered storage: short-term (7–14 days) 
+                    on primary disks, with archival to NAS or object storage. Ensure all storage is protected by UPS and monitored for health.</li>
+
+                    <li><strong>Compute:</strong> Maintain 25–30% headroom. Use NUMA-aware VM placement and CPU pinning. GPU acceleration can offload transcoding 
+                    or analytics if supported. Enable live migration for non-disruptive maintenance.</li>
+                `;
+            } else {
+                performanceRecs = `
+                    <li><strong>Network:</strong> Deploy a high-performance, redundant L2/L3 switching infrastructure with LACP-bonded 25GbE+ uplinks. 
+                    Use dedicated camera VLANs with strict QoS and traffic shaping. Enable jumbo frames and network path optimization with ECMP or SDN if available.</li>
+
+                    <li><strong>Storage:</strong> Enterprise-grade NVMe arrays in RAID 10 (for performance) with distributed hot spares and storage failover. 
+                    Use automated tiering with SSD/NVMe cache and bulk archive on object or tape-based cold storage. UPS systems must support runtime to flush cache 
+                    and execute graceful shutdowns across nodes.</li>
+
+                    <li><strong>Compute:</strong> Design for horizontal scale with hyper-converged nodes or VM clusters. Enable full NUMA pinning, memory reservation, 
+                    and GPU virtualization if AI/analytics are used. Mandatory live migration support and proactive failure detection should be in place.</li>
+                `;
+            }
     
-            // Additional recommendations based on camera density
+            // Progressive performance and architecture recommendations based on camera density
             if (results.camerasPerVM > 20) {
                 performanceRecs += `
-                    <li><strong>Camera Distribution:</strong> Implement N+1 redundancy by distributing cameras across multiple VMs to balance processing load and maintain performance during partial system failures.</li>
-                    <li><strong>Hardware Acceleration:</strong> Deploy purpose-built GPU acceleration (NVIDIA T4/A10/A30 or Intel QuickSync) to offload motion detection, video analytics, and AI processing from CPU cores, reducing system overhead by up to 60%.</li>
+                    <li><strong>Camera Load Distribution:</strong> Begin distributing cameras across multiple VMs using N+1 redundancy. This balances load and supports failover without compromising real-time processing.</li>
+                    <li><strong>Hardware Acceleration:</strong> Start introducing GPU acceleration (e.g., NVIDIA T4, A10, A30, or Intel Quick Sync) to handle motion detection, encoding, and analytics with lower CPU dependency.</li>
+                `;
+            }
+
+            if (results.camerasPerVM > 40) {
+                performanceRecs += `
+                    <li><strong>Dedicated Video Processing Hosts:</strong> Consider isolating recording/analytics workloads on dedicated VM nodes with pass-through GPU/FPGA acceleration. Use SR-IOV or PCI passthrough for high-throughput, low-latency video handling.</li>
+                    <li><strong>Persistent Storage I/O Design:</strong> At this level, aggregate high-performance storage (NVMe RAID10 or SSD-backed SAN/NAS) with dedicated write queues per VM. Plan for burst write loads during high-motion intervals.</li>
+                    <li><strong>Monitoring & Telemetry:</strong> Implement host- and VM-level telemetry (CPU Ready, IOPS, memory pressure, GPU utilization) to anticipate performance degradation before it impacts live processing.</li>
+                `;
+            }
+
+            if (results.camerasPerVM > 60) {
+                performanceRecs += `
+                    <li><strong>Resource Isolation:</strong> Pin CPU cores and memory to each VM to avoid noisy neighbor effects. Use hypervisor features (e.g., CPU affinity, HugePages) to guarantee low-latency resource access.</li>
+                    <li><strong>NUMA-Aware Scheduling:</strong> Design VM CPU and memory layout according to NUMA boundaries, especially on multi-socket hosts. Avoid cross-node memory access to sustain performance under load.</li>
+                    <li><strong>VM-to-Storage Optimization:</strong> Enable multi-path I/O, jumbo frames (MTU 9000), and separate camera/storage VLANs to reduce jitter and packet loss on heavy-write operations.</li>
+                `;
+            }
+
+            if (results.camerasPerVM > 80) {
+                performanceRecs += `
+                    <li><strong>High-Density Host Design:</strong> Evaluate whether it's more efficient to scale horizontally (more VMs) rather than vertically at this density. Excessive vertical scale complicates troubleshooting and increases blast radius during failure.</li>
+                    <li><strong>Live Migration Readiness:</strong> Disable live migration on high-density VMs unless CPU/GPU resources are mirrored across hosts. Instead, focus on service-level failover mechanisms for minimal disruption.</li>
+                    <li><strong>Advanced Scheduling Intelligence:</strong> Use infrastructure orchestration tools (like vSphere DRS or KVM-based alternatives) to automate workload placement and prevent performance hotspots.</li>
+                `;
+            }
+
+            if (results.camerasPerVM >= 100) {
+                performanceRecs += `
+                    <li><strong>Enterprise-Class Segmentation:</strong> Architect your environment so that no single VM is a single point of failure. Deploy cameras in service zones (e.g., per building/wing/floor) and assign each zone to a VM pool.</li>
+                    <li><strong>Cluster-Level Load Distribution:</strong> Implement cluster-wide analytics or recording pools where incoming streams are assigned based on available processing headroom. Use real-time telemetry to inform balancing decisions.</li>
+                    <li><strong>Risk-Adjusted Redundancy:</strong> At this density, a VM or host failure could impact hundreds of streams. Increase redundancy from N+1 to N+2 where SLA demands uninterrupted operation during maintenance or multiple failures.</li>
+                    <li><strong>Pre-Failure Predictive Scaling:</strong> Integrate machine learning or rule-based autoscaling logic that predicts saturation based on motion patterns, frame complexity, and previous load spikes.</li>
                 `;
             }
             
-            if (results.vmsNeeded > 4) {
+            // Scaled architectural recommendations based on number of VMs needed
+            if (results.vmsNeeded >= 2) {
                 performanceRecs += `
-                    <li><strong>Traffic Management:</strong> Implement an enterprise load balancer (F5, Citrix ADC, or NGINX Plus) with SSL offloading and connection persistence to optimize client connections and bandwidth utilization.</li>
-                    <li><strong>Network Optimization:</strong> Utilize SR-IOV or RDMA-enabled network adapters with dedicated bandwidth allocation to minimize latency and maximize throughput for large camera deployments.</li>
+                    <li><strong>Baseline Redundancy:</strong> Implement N+1 failover for VM-level fault tolerance. Distribute cameras such that no single VM handles all streams from any single zone or critical coverage area.</li>
+                    <li><strong>Service Continuity & Failover:</strong> Use DNS load balancing or service discovery tools (e.g., Consul, Keepalived) to auto-redirect traffic during failovers. Ensure VMS or camera firmware supports redundant recording targets or fallback paths.</li>
+                `;
+            }
+
+            if (results.vmsNeeded > 2 && results.vmsNeeded < 4) {
+                performanceRecs += `
+                    <li><strong>Role-Based VM Grouping:</strong> Segment VMs by operational roles—recording, analytics, live playback, archiving—to isolate faults, reduce performance interference, and ease scaling of subsystems independently.</li>
+                    <li><strong>Drift Management & Compliance:</strong> Use configuration management (Ansible, SaltStack, Puppet) and compliance scanning (e.g., OpenSCAP) to ensure uniform settings across all VMs. This includes stream profiles, retention logic, codec versions, and syslog settings.</li>
+                `;
+            }
+
+            if (results.vmsNeeded > 4 && results.vmsNeeded < 6) {
+                performanceRecs += `
+                    <li><strong>Load Distribution Layer:</strong> Deploy an application-aware load balancer (F5 BIG-IP, Citrix ADC, HAProxy Enterprise, or NGINX Plus) to handle incoming camera streams and API traffic. Configure for persistent connections, rate limiting, and SSL termination if HTTPS is used for camera control or analytics APIs.</li>
+                    <li><strong>Low-Latency Network Pathing:</strong> Use SR-IOV or RDMA-enabled NICs to provide direct I/O paths for high-throughput video streams. Enable QoS tagging and use dedicated VLANs or VXLAN overlays for camera ingress, reducing jitter and packet loss.</li>
+                `;
+            }
+
+            if (results.vmsNeeded > 6 && results.vmsNeeded < 8) {
+                performanceRecs += `
+                    <li><strong>Unified Observability Stack:</strong> Centralize logs, metrics, and trace data using ELK, Graylog, or Grafana/Prometheus. Track camera ingest health, recording queue latency, VM-level CPU/memory/GPU stats, and network IOPS in real time.</li>
+                    <li><strong>Immutable Golden Images:</strong> Maintain hardened VM templates (with agentless security tools and optimal kernel tuning) for rapid rollback or horizontal scaling. Use automated pipelines for validation and deployment to avoid drift and security gaps.</li>
+                `;
+            }
+
+            if (results.vmsNeeded > 8 && results.vmsNeeded < 10) {
+                performanceRecs += `
+                    <li><strong>Affinity/Anti-Affinity Policies:</strong> Define VM placement rules to ensure high-value camera feeds (e.g., perimeter, entry points) are processed on separate hosts. Use DRS rules, Kubernetes node affinity, or KVM anti-affinity sets to enforce.</li>
+                    <li><strong>Predictive Scheduling:</strong> Enable DRS (VMware), Virt-Manager, or Kubernetes Horizontal Pod Autoscalers to dynamically rebalance workload based on motion event density, codec load, or disk write saturation.</li>
+                `;
+            }
+
+            if (results.vmsNeeded >= 10) {
+                performanceRecs += `
+                    <li><strong>Cluster-Centric Architecture:</strong> Shift from per-VM resource provisioning to full cluster planning. Use historical ingest rates, motion trends, and camera schedules to pre-size host pools and auto-scale based on workload saturation.</li>
+                    <li><strong>Distributed Service Design:</strong> Decompose large services (recording, AI inference, event handling) into microservices or containers orchestrated by Kubernetes, Nomad, or OpenShift. Use horizontal autoscaling and service mesh (e.g., Istio) for resilience.</li>
+                    <li><strong>Policy-Driven Infrastructure:</strong> Enforce VM deployment, network isolation, and role-based access policies using tools like Open Policy Agent (OPA), HashiCorp Sentinel, or VMware vRealize. Automate enforcement of org-wide compliance rules for surveillance workloads.</li>
                 `;
             }
             document.getElementById('performanceRecommendations').innerHTML = performanceRecs;
             
             // Redundancy Recommendations
             let redundancyRecs = `
-                <li><strong>High Availability:</strong> Implement N+1 host redundancy with automated VM failover (VMware HA/DRS, Hyper-V Failover Clustering) configured for &lt;30 second recovery time to ensure continuous recording during hardware failures.</li>
-                <li><strong>Storage Redundancy:</strong> Deploy enterprise-class storage with dual controllers, battery-backed cache, and RAID 6/60 or erasure coding (minimum 2N protection). Maintain separate metadata volumes with higher redundancy levels.</li>
-                <li><strong>Network Resilience:</strong> Implement full fabric redundancy with dual switches, MLAG/VPC configurations, and automatic link failure detection. Configure diverse physical paths for critical camera traffic.</li>
+                <li><strong>High Availability (Compute):</strong> Implement N+1 or N+2 host redundancy with hypervisor-level HA (VMware HA/DRS, Hyper-V Clustering, or Proxmox HA). Configure VM restart priorities, anti-affinity rules, and admission control to guarantee sub-30 second recovery and uninterrupted camera recording during host failures.</li>
+                <li><strong>Storage Fault Tolerance:</strong> Use enterprise SAN or NAS with dual-active controllers, non-volatile cache (BBWC/NVMe journaling), and RAID 6/60 or erasure coding with minimum 2N+1 parity. Separate surveillance video from metadata (e.g., motion indexes, thumbnails) using dedicated LUNs or SSD-backed pools for increased IO reliability.</li>
+                <li><strong>Network Path Redundancy:</strong> Architect dual active-active switching fabrics using MLAG (Multi-Chassis Link Aggregation), vPC (Cisco), or equivalent. Ensure redundant NICs per VM (LACP bonded or SR-IOV split paths) and isolate camera traffic via VRFs or VLAN segmentation. Enable link-state tracking and fast convergence (e.g., BFD, STP Rapid) to minimize video stream interruptions on path failure.</li>
             `;
     
             // If multiple physical hosts are needed, add additional failover recommendations
             if (results.physicalHostsNeeded > 1) {
                 redundancyRecs += `
-                    <li><strong>Distributed Recording:</strong> Implement geographically dispersed recording servers in an N+1 or N+N active-active configuration with automatic failover orchestration and continuous replication to maintain recording integrity during server outages.</li>
-                    <li><strong>Disaster Recovery:</strong> Configure asynchronous cross-site replication with RPO &lt;15 minutes and automated runbooks for failover activation. For mission-critical deployments, maintain hot standby systems with dedicated cross-connections and automatic takeover capability.</li>
+                    <li><strong>Distributed Recording Architecture:</strong> Deploy geographically dispersed recording servers using an N+1 or N+N active-active configuration with automated failover orchestration. Ensure synchronous or near-synchronous replication of video streams, metadata, and configuration data across sites, maintaining recording integrity and minimizing data loss during host, network, or site-level outages.</li>
+                    <li><strong>Cross-Site Disaster Recovery (DR):</strong> Configure asynchronous cross-site replication with Recovery Point Objective (RPO) of < 15 minutes, leveraging technologies like Zerto, Veeam, or native hypervisor-based replication. Implement automated runbooks to trigger failover procedures based on predefined disaster scenarios, ensuring minimal downtime and uninterrupted video surveillance operations.</li>
+                    <li><strong>Hot Standby Infrastructure:</strong> For mission-critical deployments, establish a dedicated hot standby system at a geographically distinct location with dedicated, high-bandwidth cross-connections (e.g., Dark Fiber, MPLS). Ensure the hot standby is continuously synchronized with the primary site and has the ability to automatically assume the full load of camera streams, recording, and analytics in the event of a catastrophic failure.</li>
                 `;
             }
     
@@ -1261,17 +1437,18 @@ const CameraServerSizer = {
             let scalingRecs = '';
             const expansionCapacity = Math.floor((results.raidConfig.usableCapacity - results.storageWithOverheadTB) /
                 (results.storageWithOverheadTB / this.inputs.cameraCount));
+            
             if (expansionCapacity > 0) {
                 scalingRecs += `
-                    <li><strong>Current Capacity:</strong> Your storage configuration supports approximately <strong>${expansionCapacity} additional cameras</strong> 
-                    (${Math.round(expansionCapacity/this.inputs.cameraCount*100)}% growth) at current retention settings before requiring expansion. Plan upgrades when reaching 80% capacity to maintain optimal performance.</li>
+                    <li><strong>Current Capacity:</strong> Your current storage configuration supports approximately <strong>${expansionCapacity} additional cameras</strong> 
+                    (${Math.round(expansionCapacity / this.inputs.cameraCount * 100)}% growth) at the current retention settings before expansion is required. To avoid performance degradation, we recommend planning infrastructure upgrades when capacity reaches 80%, or when approaching peak throughput thresholds, whichever occurs first.</li>
                 `;
             }
+            
             scalingRecs += `
-                <li><strong>Resource Planning:</strong> Reserve a minimum of <strong>${Math.ceil(results.cpuCoresPerVM * 0.3)}</strong> additional CPU cores
-                and <strong>${Math.ceil(results.ramPerVM * 0.3)} GB</strong> RAM per host to accommodate future analytics, higher resolutions, or increased frame rates. Consider pre-allocating PCIe slots for additional GPU acceleration cards.</li>
-                <li><strong>Infrastructure Scaling:</strong> Implement modular storage architecture using enterprise hyperconverged solutions (Dell VxRail, Nutanix NX, HPE SimpliVity) or scale-out NAS platforms (NetApp ONTAP, Dell PowerScale) with non-disruptive expansion capabilities and automated data tiering.</li>
-                <li><strong>Bandwidth Growth:</strong> Deploy network infrastructure with upgrade paths to 25/100GbE (leaf-spine architecture recommended for large-scale deployments). Reserve rack space and power capacity for additional network switches to support camera expansion zones.</li>
+                <li><strong>Resource Planning:</strong> Reserve at least <strong>${Math.ceil(results.cpuCoresPerVM * 0.3)}</strong> additional CPU cores and <strong>${Math.ceil(results.ramPerVM * 0.3)} GB</strong> of RAM per host to account for future growth in analytics, increased resolution, higher frame rates, and AI processing. Additionally, consider allocating PCIe slots in advance for GPU acceleration cards (e.g., NVIDIA T4, A30) to offload compute-heavy tasks like motion detection and video analytics.</li>
+                <li><strong>Modular Infrastructure Scaling:</strong> Build out a modular storage architecture using enterprise-grade hyperconverged infrastructure (HCI) solutions like Dell VxRail, Nutanix NX, or HPE SimpliVity. These platforms provide seamless, non-disruptive expansion and include automated data tiering to optimize storage performance and cost-efficiency as the system grows. For large-scale deployments, consider scale-out NAS platforms like NetApp ONTAP or Dell PowerScale with built-in data replication and high-availability features.</li>
+                <li><strong>Bandwidth Growth Strategy:</strong> Upgrade network infrastructure with 25/100GbE (leaf-spine architecture is highly recommended for large-scale, multi-site deployments). Ensure that your network switches are future-proofed with sufficient port density, and plan for redundancy with dual-homing for critical network paths. Also, account for additional power and rack space to support new network gear as camera zones expand.</li>
             `;
             document.getElementById('scalingRecommendations').innerHTML = scalingRecs;
             
@@ -1446,7 +1623,71 @@ const CameraServerSizer = {
             printButton.className = 'button';
             printButton.textContent = 'Print Report';
             printButton.addEventListener('click', () => {
-                window.print();
+                // Clone the results content
+                const clonedResults = resultsDiv.cloneNode(true);
+
+                // Remove the export-container from the clone
+                const buttonsToRemove = clonedResults.querySelector('.export-container');
+                if (buttonsToRemove) {
+                    buttonsToRemove.remove();
+                }
+
+                // Open a new window for printing
+                const printWindow = window.open('', '', 'width=800,height=600');
+                printWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>Print Report</title>
+                            <style>
+                                body {
+                                    font-family: Arial, sans-serif;
+                                    padding: 40px;
+                                    color: #333;
+                                }
+                                header {
+                                    display: flex;
+                                    align-items: center;
+                                    border-bottom: 2px solid #ccc;
+                                    margin-bottom: 30px;
+                                    padding-bottom: 10px;
+                                }
+                                header img {
+                                    height: 48px;
+                                    width: 48px;
+                                    margin-right: 15px;
+                                    image-rendering: auto;
+                                }
+                                header h1 {
+                                    font-size: 1.75rem;
+                                    margin: 0;
+                                }
+                                .note {
+                                    border-left: 4px solid #2196F3;
+                                    padding: 10px;
+                                    background: #f1f8ff;
+                                    margin-bottom: 20px;
+                                    border-radius: 6px;
+                                }
+                                ul {
+                                    padding-left: 20px;
+                                }
+                                li {
+                                    margin-bottom: 8px;
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <header>
+                                <img src="/favicon.ico" alt="Tragic Studios Logo">
+                                <h1>Camera Server Sizing Report</h1>
+                            </header>
+                            ${clonedResults.innerHTML}
+                        </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                printWindow.focus();
+                printWindow.print();
             });
             
             // Create save configuration button
@@ -1524,24 +1765,3 @@ async function loadConfigurationById(configId) {
         alert("Error loading configuration.");
     }
 }
-/* Added to index.html
-// Delete Configuration from Server
-async function deleteConfiguration(configId) {
-    if (!confirm("Are you sure you want to delete this configuration?")) return;
-  
-    try {
-      const res = await fetch(`/delete-configuration?id=${configId}`, { method: 'DELETE' });
-      const result = await res.json();
-  
-      if (result.success) {
-        console.log("Configuration deleted.");
-        loadSavedConfigurations(); // Reload the list
-      } else {
-        alert("Failed to delete configuration.");
-      }
-    } catch (err) {
-      console.error("Error deleting configuration:", err);
-      alert("Error deleting configuration.");
-    }
-  }
-*/
