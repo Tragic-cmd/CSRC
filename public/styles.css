@@ -9,7 +9,7 @@
   --accent: #ffc107;
   --danger: #e74c3c;
   --warning: #f44336;
-  --border: #ddd;
+  --border: #1b7a7a;
   --load-button: #00bd6e;
 }
 
@@ -221,10 +221,13 @@ input.input-error {
 
 /* Result Grid Styling */
 .result-grid {
+  display: none;
+  /*
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
   margin-top: 16px;
+  */
 }
 
 .result-label {

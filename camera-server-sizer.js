@@ -834,118 +834,117 @@ const CameraServerSizer = {
         let totalDrives;
         let usableCapacityMultiplier;
         let minDrives = this.config.raidMinDrives[raidLevel] || 4;
-        
+        let arrayCount = 0;
+        let drivesPerArray = [];
+    
         try {
             // Calculate number of drives needed based on RAID level
-            switch(raidLevel) {
+            switch (raidLevel) {
                 case 'RAID5':
-                    // For RAID5, usable space is N-1 drives
-                    usableCapacityMultiplier = (n) => (n - 1) * hdSizeTB * 0.93; // Account for RAID overhead
-                    
-                    // Calculate required drives based on storage needed
+                    usableCapacityMultiplier = (n) => (n - 1) * hdSizeTB * 0.93;
                     totalDrives = Math.ceil(requiredStorageTB / (hdSizeTB * 0.93)) + 1;
                     if (totalDrives < minDrives) totalDrives = minDrives;
                     break;
-                    
-                case 'RAID6':
-                    {
-                        const usablePerDrive = hdSizeTB * 0.93;
-                        const drivesNeeded = Math.ceil(requiredStorageTB / usablePerDrive) + 2;
-                        if (drivesNeeded < minDrives) totalDrives = minDrives;
-                        else totalDrives = drivesNeeded;
-
-                        // Split into arrays of 10 data drives + 2 parity (RAID6)
-                        const raidGroups = [];
-                        let remainingDrives = totalDrives;
-
-                        while (remainingDrives >= 10) {
-                            raidGroups.push(12); // 10 data + 2 parity
-                            remainingDrives -= 10;
-                        }
-
-                        if (remainingDrives > 0) {
-                            const lastGroupSize = remainingDrives + 2;
-                            if (lastGroupSize < minDrives) {
-                                // pad to minimum viable RAID6 group
-                                const paddedSize = minDrives;
-                                raidGroups.push(paddedSize);
-                                totalDrives = raidGroups.reduce((sum, val) => sum + val, 0);
-                            } else {
-                                raidGroups.push(lastGroupSize); // data + 2 parity
-                                totalDrives = raidGroups.reduce((sum, val) => sum + val, 0);
-                            }
-                        }
-
-                        usableCapacityMultiplier = () => {
-                            return raidGroups.reduce((sum, groupSize) => {
-                                return sum + (groupSize - 2) * hdSizeTB * 0.93;
-                            }, 0);
-                        };
-
-                        break;
+    
+                case 'RAID6': {
+                    const usablePerDrive = hdSizeTB * 0.93;
+                    const drivesNeeded = Math.ceil(requiredStorageTB / usablePerDrive) + 2;
+                    totalDrives = Math.max(drivesNeeded, minDrives);
+    
+                    const raidGroups = [];
+                    let remainingDrives = totalDrives;
+    
+                    while (remainingDrives >= 10) {
+                        raidGroups.push(12);
+                        remainingDrives -= 10;
                     }
-                    
+    
+                    if (remainingDrives > 0) {
+                        const lastGroupSize = remainingDrives + 2;
+                        const finalGroup = lastGroupSize < minDrives ? minDrives : lastGroupSize;
+                        raidGroups.push(finalGroup);
+                    }
+    
+                    totalDrives = raidGroups.reduce((sum, g) => sum + g, 0);
+                    drivesPerArray = raidGroups;
+                    arrayCount = raidGroups.length;
+    
+                    usableCapacityMultiplier = () => {
+                        return raidGroups.reduce((sum, groupSize) => {
+                            return sum + (groupSize - 2) * hdSizeTB * 0.93;
+                        }, 0);
+                    };
+                    break;
+                }
+    
                 case 'RAID10':
-                    // For RAID10, usable space is N/2 drives
-                    usableCapacityMultiplier = (n) => (n / 2) * hdSizeTB * 0.96; // RAID10 has less overhead
-                    
-                    // Calculate required drives based on storage needed
+                    usableCapacityMultiplier = (n) => (n / 2) * hdSizeTB * 0.96;
                     totalDrives = Math.ceil(requiredStorageTB / (hdSizeTB * 0.48)) * 2;
                     if (totalDrives < minDrives) totalDrives = minDrives;
-                    
-                    // Ensure even number of drives
                     if (totalDrives % 2 !== 0) totalDrives++;
                     break;
-                    
-                default:
-                    // Default to RAID6
-                    {
-                        const usablePerDrive = hdSizeTB * 0.93;
-                        const drivesNeeded = Math.ceil(requiredStorageTB / usablePerDrive) + 2;
-                        if (drivesNeeded < minDrives) totalDrives = minDrives;
-                        else totalDrives = drivesNeeded;
-                
-                        const raidGroups = [];
-                        let remainingDrives = totalDrives;
-                
-                        while (remainingDrives >= 10) {
-                            raidGroups.push(12);
-                            remainingDrives -= 10;
-                        }
-                
-                        if (remainingDrives > 0) {
-                            const lastGroupSize = remainingDrives + 2;
-                            if (lastGroupSize < minDrives) {
-                                const paddedSize = minDrives;
-                                raidGroups.push(paddedSize);
-                                totalDrives = raidGroups.reduce((sum, val) => sum + val, 0);
-                            } else {
-                                raidGroups.push(lastGroupSize);
-                                totalDrives = raidGroups.reduce((sum, val) => sum + val, 0);
-                            }
-                        }
-                
-                        usableCapacityMultiplier = () => {
-                            return raidGroups.reduce((sum, groupSize) => {
-                                return sum + (groupSize - 2) * hdSizeTB * 0.93;
-                            }, 0);
-                        };
-                
-                        break;
+    
+                case 'RAID60': {
+                    const drivesPerGroup = 12; // 10 data + 2 parity
+                    const usablePerGroup = (drivesPerGroup - 2) * hdSizeTB * 0.93;
+                    arrayCount = Math.ceil(requiredStorageTB / usablePerGroup);
+                    drivesPerArray = new Array(arrayCount).fill(drivesPerGroup);
+                    totalDrives = drivesPerArray.reduce((sum, d) => sum + d, 0);
+    
+                    usableCapacityMultiplier = () => {
+                        return arrayCount * (drivesPerGroup - 2) * hdSizeTB * 0.93;
+                    };
+                    break;
+                }
+    
+                default: {
+                    const usablePerDrive = hdSizeTB * 0.93;
+                    const drivesNeeded = Math.ceil(requiredStorageTB / usablePerDrive) + 2;
+                    totalDrives = Math.max(drivesNeeded, minDrives);
+    
+                    const raidGroups = [];
+                    let remainingDrives = totalDrives;
+    
+                    while (remainingDrives >= 10) {
+                        raidGroups.push(12);
+                        remainingDrives -= 10;
                     }
+    
+                    if (remainingDrives > 0) {
+                        const lastGroupSize = remainingDrives + 2;
+                        const finalGroup = lastGroupSize < minDrives ? minDrives : lastGroupSize;
+                        raidGroups.push(finalGroup);
+                    }
+    
+                    totalDrives = raidGroups.reduce((sum, g) => sum + g, 0);
+                    drivesPerArray = raidGroups;
+                    arrayCount = raidGroups.length;
+    
+                    usableCapacityMultiplier = () => {
+                        return raidGroups.reduce((sum, groupSize) => {
+                            return sum + (groupSize - 2) * hdSizeTB * 0.93;
+                        }, 0);
+                    };
+                    break;
+                }
             }
-            
+    
             // Calculate capacities
             const totalRawCapacity = totalDrives * hdSizeTB;
-            const usableCapacity = usableCapacityMultiplier(totalDrives);
-            
+            const usableCapacity = typeof usableCapacityMultiplier === 'function'
+                ? usableCapacityMultiplier(totalDrives)
+                : usableCapacityMultiplier;
+    
             return {
                 totalDrives,
                 raidLevel,
                 hdSizeTB,
                 totalRawCapacity,
-                usableCapacity
+                usableCapacity,
+                arrayCount,
+                drivesPerArray
             };
+    
         } catch (error) {
             console.error("Error in RAID calculation:", error);
             throw new Error(`RAID configuration calculation failed: ${error.message}`);
@@ -1166,9 +1165,26 @@ const CameraServerSizer = {
                         `${(results.raidConfig.usableCapacity / results.raidConfig.totalRawCapacity * 100).toFixed(1)}%`}</li>
                     <li><strong>Fault Tolerance:</strong> ${getRaidFaultTolerance(results.raidConfig.raidLevel)}</li>
             `;
+
+            // Add RAID rebuild estimate and MTTDL warning
+            const drivesPerArray = 12;
+            const totalArrays = Math.ceil(results.raidConfig.totalDrives / drivesPerArray);
+            const estimatedRebuildTime = (results.raidConfig.hdSizeTB / 0.15).toFixed(1); // TB / TB/hr
+            const isRaid6 = results.raidConfig.raidLevel === 'RAID6';
+
+            raidAnalysisHTML += `
+                <li><strong>Estimated Rebuild Duration:</strong> ~${estimatedRebuildTime} hours per failed drive (single-threaded rebuild at 150 GB/hr)</li>
+            `;
+
+            if (isRaid6 && totalArrays >= 4) {
+                raidAnalysisHTML += `
+                     <li><em><strong>Tip:</strong> RAID60 provides faster concurrent rebuilds and better protection against cascading failures across large arrays.</em></li>
+                `;
+            }
+            
             
             // Add array information if applicable
-            if (results.raidConfig.arrayCount && results.raidConfig.arrayCount > 1) {
+            if (results.raidConfig.arrayCount && results.raidConfig.raidLevel > 1) {
                 raidAnalysisHTML += `
                     <li><strong>Array Configuration:</strong> ${results.raidConfig.arrayCount} separate arrays with maximum ${
                         Math.max(...(results.raidConfig.drivesPerArray || [12]))} drives per array</li>
