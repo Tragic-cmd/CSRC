@@ -12,9 +12,13 @@
     <!-- Dark Mode Toggle -->
     <div style="display: flex; justify-content: flex-end; gap: 10px;">
       <button class="toggle-theme" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+
     </div>
     <div>
-      <h1>Camera Server Sizing Calculator</h2>
+      <header>
+        <img src="/camera.svg" alt="Tragic Studios Logo">
+        <h1>Camera Server Sizing Calculator</h1>
+      </header>
       <img src="/tragicstudios.svg" alt="Tragic Studios" />
     </div>
     <h2>Login</h2>
@@ -33,9 +37,10 @@
         <button type="submit" class="button">Login</button>
       </div>
     </form>
-
-    <p>No account? <a href="register.html">Register here</a></p>
-    <p><a href="forgot-password.html">Forgot Password?</a></p>
+    <div class="form-group">
+      <a href="register.html" class="button">Register here</a>
+      <a href="forgot-password.html" class="button">Forgot Password?</a>
+    </div>
   </div>
 
   <script>

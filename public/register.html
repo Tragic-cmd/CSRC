@@ -10,12 +10,14 @@
 <body>
   <div class="container">
     <!-- Dark Mode Toggle -->
-    <div style="display: flex; justify-content: space-between; gap: 10px;">
+    <div style="display: flex; justify-content: flex-end; gap: 10px;">
       <button class="toggle-theme" onclick="toggleDarkMode()">Toggle Dark Mode</button>
-      <a href="login.html" class="button">Login</a>
+      <button class="logout-btn" onclick="window.location.href='/login'">Login</button>
     </div>
-
-    <h2>Register</h2>
+    <header>
+      <img src="/tragicstudios.svg" alt="Tragic Studios Logo">
+      <h1>Register</h1>
+    </header>
 
     <!-- Registration Form -->
     <form id="registerForm" method="POST" action="/register" class="form-section">
@@ -57,8 +59,6 @@
 
       <p id="registration-message" class="validation-message"></p>
     </form>
-
-    <p>Already have an account? <a href="login.html">Login here</a></p>
   </div>
 
   <script>
