@@ -7,6 +7,8 @@ const path = require('path');
 
 const app = express();
 
+const SQLiteStore = require('connect-sqlite3')(session);
+
 // Trust proxy if behind a reverse proxy (Render, Heroku, etc.)
 if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
@@ -59,15 +61,22 @@ console.log("✅ Users table created successfully.");
 app.use(express.json());  // ✅ Required for JSON requests
 app.use(bodyParser.urlencoded({ extended: true })); // ✅ Parses form data (x-www-form-urlencoded)
 
+
 // Session settings
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'dev_fallback_secret', // ✅ Use env var in production
+  store: new SQLiteStore({
+    db: 'sessions.db',   // The SQLite DB file to use
+    dir: './db',         // Optional directory for session DB
+    table: 'sessions'    // Optional table name
+  }),
+  secret: process.env.SESSION_SECRET || 'dev_fallback_secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { 
-    secure: process.env.NODE_ENV === 'production', // ✅ Secure only in production
-    httpOnly: true, // ✅ Prevents JavaScript access (XSS protection)
-    sameSite: 'strict' // ✅ Prevents CSRF attacks
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'strict',
+    maxAge: 1000 * 60 * 60 * 24 // 1 day session lifetime
   }
 }));
 
