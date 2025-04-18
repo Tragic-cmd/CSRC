@@ -14,8 +14,9 @@ if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
 }
 
-const db = new sqlite3.Database('./users.db');
-console.log("✅ Connected to DB at:", path.resolve('./users.db'));
+const db = new sqlite3.Database('/data/users.db');
+console.log("✅ Connected to DB at:", path.resolve('./data/users.db'));
+
 // Wrap db.get() and db.run() inside Promise-based functions
 function dbGet(query, params = []) {
   return new Promise((resolve, reject) => {
@@ -66,7 +67,7 @@ app.use(bodyParser.urlencoded({ extended: true })); // ✅ Parses form data (x-w
 app.use(session({
   store: new SQLiteStore({
     db: 'sessions.db',   // The SQLite DB file to use
-    dir: './db',         // Optional directory for session DB
+    dir: '/data',         // Optional directory for session DB
     table: 'sessions'    // Optional table name
   }),
   secret: process.env.SESSION_SECRET || 'dev_fallback_secret',
