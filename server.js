@@ -6,6 +6,12 @@ const session = require('express-session');
 const path = require('path');
 
 const app = express();
+
+// Trust proxy if behind a reverse proxy (Render, Heroku, etc.)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 const db = new sqlite3.Database('./users.db');
 console.log("✅ Connected to DB at:", path.resolve('./users.db'));
 // Wrap db.get() and db.run() inside Promise-based functions
@@ -55,7 +61,7 @@ app.use(bodyParser.urlencoded({ extended: true })); // ✅ Parses form data (x-w
 
 // Session settings
 app.use(session({
-  secret: 'your_secret_key',
+  secret: process.env.SESSION_SECRET || 'dev_fallback_secret', // ✅ Use env var in production
   resave: false,
   saveUninitialized: false,
   cookie: { 
