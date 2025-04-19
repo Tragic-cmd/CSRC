@@ -456,43 +456,6 @@ input.input-error {
   content: ' ▼';
 }
 
-/* Responsive Adjustments for Smaller Screens */
-@media (max-width: 768px) {
-  /* Stack table rows vertically for small screens */
-  #usersTable, #usersTable th, #usersTable td {
-    display: block;
-    width: 100%;
-  }
-
-  #usersTable th {
-    text-align: left;
-    background-color: #f4f4f4; /* Light background for headers */
-  }
-
-  #usersTable td {
-    text-align: left;
-    border: none;
-    padding-left: 50%; /* Indent for better readability */
-    position: relative;
-  }
-
-  /* Add a pseudo element to label each cell on mobile */
-  #usersTable td::before {
-    content: attr(data-label);
-    font-weight: bold;
-    position: absolute;
-    left: 10px;
-    top: 10px;
-    display: block;
-  }
-
-  /* Remove the last-column behavior for smaller screens */
-  #usersTable th:last-child, 
-  #usersTable td:last-child {
-    min-width: auto;
-  }
-}
-
 /* Tooltip on Hover */
 #usersTable td:hover::after {
   content: attr(data-fulltext);
@@ -557,4 +520,155 @@ input.input-error {
 /* Ensure the styles.css file is linked */
 link[rel="stylesheet"][href="styles.css"] {
   display: block;
+}
+
+/* ===================== */
+/* 📱 Mobile Enhancements */
+/* ===================== */
+
+@media (max-width: 768px) {
+  /* Collapse sidebar */
+  .sidebar {
+    position: fixed;
+    width: 100%;
+    height: auto;
+    max-height: 100vh;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    padding: 10px 20px;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .sidebar.open {
+    transform: translateY(0);
+  }
+
+  .sidebar-toggle {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    left: auto;
+    z-index: 1100;
+    background-color: var(--primary);
+    color: white;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 1rem;
+  }
+
+  .main-content {
+    margin-left: 0;
+    margin-top: 70px;
+    padding: 16px;
+  }
+
+  /* Adjust container */
+  .container {
+    padding: 16px;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  header h1 {
+    font-size: 1.8rem;
+  }
+
+  header img {
+    height: 40px;
+    width: 40px;
+  }
+
+  /* Form controls */
+  input, select, textarea {
+    font-size: 1rem;
+    padding: 10px;
+  }
+
+  /* Buttons */
+  .button, .toggle-theme, .profile-btn, .admin-btn, .logout-btn {
+    font-size: 1rem;
+    padding: 10px 14px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+  }
+
+  /* Result grid */
+  .result-grid {
+    display: block;
+  }
+
+  /* Responsive table already included but ensure margins */
+  .table-container {
+    margin-top: 20px;
+  }
+
+  #usersTable td {
+    padding: 12px;
+    font-size: 0.95rem;
+  }
+
+  #usersTable td::before {
+    font-size: 0.9rem;
+    color: var(--primary-dark);
+  }
+
+  /* Sidebar config buttons */
+  .config-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .button-container {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .config-name {
+    font-size: 1rem;
+  }
+
+  /* Stack table rows vertically for small screens */
+  #usersTable, #usersTable th, #usersTable td {
+    display: block;
+    width: 100%;
+  }
+
+  #usersTable th {
+    text-align: left;
+    background-color: #f4f4f4; /* Light background for headers */
+  }
+
+  #usersTable td {
+    text-align: left;
+    border: none;
+    padding-left: 50%; /* Indent for better readability */
+    position: relative;
+  }
+
+  /* Add a pseudo element to label each cell on mobile */
+  #usersTable td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    display: block;
+  }
+
+  /* Remove the last-column behavior for smaller screens */
+  #usersTable th:last-child, 
+  #usersTable td:last-child {
+    min-width: auto;
+  }
 }
