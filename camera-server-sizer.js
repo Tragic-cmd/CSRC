@@ -1226,9 +1226,9 @@ const CameraServerSizer = {
                     'RAID0': 'No drive failure tolerance',
                     'RAID1': 'Can tolerate 1 drive failure',
                     'RAID5': 'Can tolerate 1 drive failure',
-                    'RAID6': 'Can tolerate up to 2 drive failures',
+                    'RAID6': 'Can tolerate up to 2 drive failures per array',
                     'RAID10': 'Can tolerate up to 1 drive failure per mirrored pair',
-                    'RAID60': 'Tolerates up to 2 drive failures per RAID6 subgroup'
+                    'RAID60': 'Can tolerate up to 2 drive failures per RAID6 subgroup'
                 };
                 return faultTolerance[raidLevel.replace(/\s+/g, '')] || 'Varies based on configuration';
             }
