@@ -535,20 +535,19 @@ link[rel="stylesheet"][href="styles.css"] {
   /* Collapse sidebar */
   .sidebar {
     position: fixed;
-    width: 80%; /* Set sidebar width to 80% of screen width */
-    max-width: 300px; /* Optional: set a max-width for the sidebar */
-    height: 100vh;
-    overflow-y: auto;
     top: 0;
-    left: -80%; /* Initially hidden off-screen */
-    z-index: 1000;
+    left: -100%; /* Initially hidden off-screen */
+    width: 80%; /* Sidebar takes up 80% of the screen */
+    background-color: var(--sidebar-bg, #fff);
+    height: 100vh;
     padding: 10px 20px;
+    z-index: 1000;
     transition: transform 0.3s ease-in-out;
-    background-color: var(--sidebar-bg, #fff); /* Optional fallback */
+    transform: translateX(-100%); /* Initially hidden */
   }
 
-  .sidebar.open {
-    transform: translateX(80%); /* Slide in the sidebar */
+  .sidebar.collapsed {
+    transform: translateX(0); /* Slide in when open */
     left: 0; /* Ensure it's positioned correctly */
   }
 
@@ -560,23 +559,39 @@ link[rel="stylesheet"][href="styles.css"] {
     background-color: var(--primary);
     color: white;
     border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 0.95rem;
-    width: auto;
-    max-width: 100%;
+    width: 36px; /* Reduced width */
+    height: 36px; /* Reduced height */
+    font-size: 1.2rem; /* Icon size */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0; /* Removed padding */
     box-sizing: border-box;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
   }
 
   .main-content {
     margin-left: 0;
-    margin-top: 70px;
+    margin-top: 20px;
     padding: 16px;
     transition: margin-left 0.3s ease-in-out; /* Smooth transition when sidebar opens */
   }
 
   /* When sidebar is open, shift the main content */
-  .sidebar.open + .main-content {
-    margin-left: 80%; /* Push content to the right */
+  .sidebar.collapsed + .main-content {
+    padding-left: 16px; /* Allow content to stay in place */
+  }
+
+  /* Sidebar Image */
+  .sidebar img {
+    width: 80px; /* Adjust the width to a smaller size */
+    height: auto; /* Ensure the height adjusts proportionally */
+    max-width: 100%; /* Prevent image from exceeding the container */
+    object-fit: contain; /* Maintain image aspect ratio and prevent distortion */
+    margin-left: auto; /* Add space below the image */
+    margin-right: auto;
+
   }
 
   /* Adjust container */
@@ -587,9 +602,11 @@ link[rel="stylesheet"][href="styles.css"] {
   }
 
   header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    display: flex;
+    align-items: center;
+    border-bottom: 2px solid #1b7a7a;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
   }
 
   header h1 {
@@ -603,7 +620,7 @@ link[rel="stylesheet"][href="styles.css"] {
 
   /* Form controls */
   input, select, textarea {
-    font-size: 1rem;
+    font-size: 0.9rem;
     padding: 8px 10px;
     width: 100%;
     max-width: 100%;
@@ -616,13 +633,25 @@ link[rel="stylesheet"][href="styles.css"] {
   .profile-btn,
   .admin-btn,
   .logout-btn {
-    font-size: 0.95rem;
-    padding: 8px 12px;
+    font-size: 0.75rem;
+    padding: 3px 8px; /* Tighten vertical and horizontal space */
+    line-height: 1;    /* Tight line height */
+    border-radius: 3px;
     width: auto;
     max-width: 100%;
     box-sizing: border-box;
-    margin-bottom: 10px;
+    margin-bottom: 4px;
     display: inline-block;
+    white-space: nowrap; /* Prevent line wraps */
+}
+
+  /* Result Section */
+  .result-section {
+    margin-top: 24px;
+    padding: 12px;
+    border-left-width: 3px;
+    font-size: 0.9rem;
+    word-wrap: break-word;
   }
 
   /* Result grid */
@@ -632,6 +661,25 @@ link[rel="stylesheet"][href="styles.css"] {
     overflow-wrap: break-word;
     line-height: 1.4;
     display: block;
+  }
+
+  ul, ol {
+    padding-left: 20px;
+    margin: 12px 0;
+  }
+  
+  li {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin-bottom: 3px;
+    word-wrap: break-word;
+  }
+
+  .note, .warning-message {
+    padding: 5px;
+    font-size: 0.9rem;
+    word-break: break-word;
+    line-height: 1.4;
   }
 
   /* Responsive table and layout */
@@ -675,20 +723,30 @@ link[rel="stylesheet"][href="styles.css"] {
     min-width: auto;
   }
 
-  /* Sidebar config buttons */
   .config-wrapper {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: rgb(50, 207, 255);;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 15px;
   }
-
-  .button-container {
-    width: 100%;
-    justify-content: flex-start;
-    gap: 8px;
-  }
-
+  
+  /* Site Name */
   .config-name {
-    font-size: 1rem;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* Button Container (holds Load and Delete buttons) */
+  .button-container {
+    display: flex;
+    gap: 10px; /* Space between buttons */
   }
 }
