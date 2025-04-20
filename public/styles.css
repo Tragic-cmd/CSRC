@@ -657,11 +657,7 @@ link[rel="stylesheet"][href="styles.css"] {
 
   /* Result grid */
   .result-grid {
-    font-size: 1rem;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    line-height: 1.4;
-    display: block;
+    display: none;
   }
 
   ul, ol {
@@ -762,9 +758,5 @@ link[rel="stylesheet"][href="styles.css"] {
   .button-container {
     display: flex;
     gap: 10px; /* Space between buttons */
-  }
-  
-  .result-grid {
-    display: none;
   }
 }
