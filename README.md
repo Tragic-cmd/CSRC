@@ -18,8 +18,6 @@ The Camera Server Sizing Tool is a comprehensive web-based application designed 
        
 7. [Contributing](https://github.com/Tragic-cmd/CSRC#contributing)
        
-8. [License](https://github.com/Tragic-cmd/CSRC#license)
-       
 9. [Contact](https://github.com/Tragic-cmd/CSRC#contact)
 
 ## Installation
@@ -190,10 +188,6 @@ git push origin feature-branch-name
 ```
 
 Submit a Pull Request
-
-## License
-
-This project is licensed under the MIT License – see the LICENSE file for details.
 
 ## Contact
 
