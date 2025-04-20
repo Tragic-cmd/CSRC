@@ -1690,6 +1690,9 @@ const CameraServerSizer = {
                                 li {
                                     margin-bottom: 8px;
                                 }
+                                .result-grid {
+                                display: none;
+                                }
                             </style>
                         </head>
                         <body>

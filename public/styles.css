@@ -683,44 +683,55 @@ link[rel="stylesheet"][href="styles.css"] {
   }
 
   /* Responsive table and layout */
-  .table-container {
-    margin-top: 20px;
+  #usersTable {
+    border: 0;
+  }
+
+  #usersTable thead {
+    display: none;
   }
 
   #usersTable,
-  #usersTable th,
+  #usersTable tbody,
+  #usersTable tr,
   #usersTable td {
     display: block;
     width: 100%;
   }
 
-  #usersTable th {
-    text-align: left;
-    background-color: #f4f4f4;
+  #usersTable tr {
+    margin-bottom: 16px;
+    border-radius: 8px;
+    padding: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
 
   #usersTable td {
+    display: flex;
+    flex-direction: row;
+    align-items: left;
+    justify-content: flex-start; /* Center content */
     text-align: left;
-    border: none;
-    padding: 12px 10px 12px 50%;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     position: relative;
+    word-break: break-word;
+    width: 100%;
     box-sizing: border-box;
   }
-
+  
   #usersTable td::before {
     content: attr(data-label);
-    font-weight: bold;
     position: absolute;
-    left: 10px;
-    top: 12px;
-    font-size: 0.9rem;
-    color: var(--primary-dark);
+    font-weight: bold;
+    color: #444;
+    white-space: nowrap;
+    text-align: left;
+    width: 40%; /* Align label width with padding */
   }
 
-  #usersTable th:last-child,
-  #usersTable td:last-child {
-    min-width: auto;
+  #usersTable td span {
+    flex: 2;
+    text-align: center;
   }
 
   .config-wrapper {
