@@ -955,28 +955,129 @@ const CameraServerSizer = {
     generateVirtualizationRecommendations: function(results) {
         // Industry-standard hypervisor selection based on VM count and storage size
         let hypervisorRecommendation;
-    
-        if (results.vmsNeeded <= 4 && results.storageWithOverheadTB < 50) {
-            hypervisorRecommendation = "VMware vSphere Essentials, Microsoft Hyper-V, or Proxmox VE (for small deployments with minimal HA requirements)";
-        } else if (results.vmsNeeded <= 16) {
-            hypervisorRecommendation = "VMware vSphere Standard, Microsoft Hyper-V with System Center, or XCP-ng (for medium-scale deployments with centralized management)";
-        } else if (results.vmsNeeded <= 64) {
-            hypervisorRecommendation = "VMware vSphere Enterprise Plus, Microsoft Hyper-V Datacenter, or Nutanix AHV (for large-scale environments requiring vMotion and DRS)";
+        const vms = results.vmsNeeded;
+        const tb = results.storageWithOverheadTB;
+
+        if (vms <= 2 && tb < 10) {
+            hypervisorRecommendation =
+                "<p><strong>Hypervisors for Micro Deployments (≤2 VMs, &lt;10TB):</strong></p>" +
+                "<ul>" +
+                "<li><strong>Performance:</strong> VMware vSphere Essentials<sup>*</sup> — stable and supported, includes vCenter for up to 3 hosts.</li>" +
+                "<li><strong>Balanced:</strong> Microsoft Hyper-V Standalone — free with Windows Server, native integration with Windows tooling.</li>" +
+                "<li><strong>Cost-Optimized:</strong> KVM with Cockpit or WebVirtMgr — lightweight, flexible, CLI-friendly with GUI options.</li>" +
+                "</ul>" +
+                "<p><small><sup>*</sup>vSphere Essentials lacks vMotion/DRS and is capped at 3 hosts.</small></p>";
+        } else if (vms <= 8 && tb < 50) {
+            hypervisorRecommendation =
+                "<p><strong>Hypervisors for Small Deployments (3–8 VMs, &lt;50TB):</strong></p>" +
+                "<ul>" +
+                "<li><strong>Performance:</strong> VMware vSphere Essentials Plus<sup>*</sup> — adds vMotion, HA, and VDP for backup.</li>" +
+                "<li><strong>Balanced:</strong> Microsoft Hyper-V with Failover Clustering — good for Windows shops, supports shared storage and live migration.</li>" +
+                "<li><strong>Cost-Optimized:</strong> Proxmox VE — built-in HA, backups, and simple cluster setup via web GUI.</li>" +
+                "</ul>" +
+                "<p><small><sup>*</sup>Still capped at 3 hosts — plan ahead if expansion is likely.</small></p>";
+        } else if (vms <= 20) {
+            hypervisorRecommendation =
+                "<p><strong>Hypervisors for Medium Deployments (9–20 VMs):</strong></p>" +
+                "<ul>" +
+                "<li><strong>Performance:</strong> VMware vSphere Standard + vCenter — enterprise reliability, full lifecycle and VM template support.</li>" +
+                "<li><strong>Balanced:</strong> Microsoft Hyper-V with SCVMM — supports clustering, VM templates, and live migrations at scale.</li>" +
+                "<li><strong>Cost-Optimized:</strong> XCP-ng or Proxmox VE with ZFS — great community support, flexible storage backend options.</li>" +
+                "</ul>";
+        } else if (vms <= 50) {
+            hypervisorRecommendation =
+                "<p><strong>Hypervisors for Large Deployments (21–50 VMs):</strong></p>" +
+                "<ul>" +
+                "<li><strong>Performance:</strong> VMware vSphere Enterprise Plus — includes DRS, storage policies, and host profiles for consistency.</li>" +
+                "<li><strong>Balanced:</strong> Microsoft Hyper-V Datacenter + SCVMM — ideal for managing larger clusters and high availability with Replica/Shielded VMs.</li>" +
+                "<li><strong>Cost-Optimized:</strong> XCP-ng or Proxmox VE with Ceph — scalable clustering with open-source flexibility (requires careful storage planning).</li>" +
+                "</ul>";
+        } else if (vms <= 100) {
+            hypervisorRecommendation =
+                "<p><strong>Hypervisors for Enterprise Deployments (51–100 VMs):</strong></p>" +
+                "<ul>" +
+                "<li><strong>Performance:</strong> VMware Cloud Foundation — full SDDC stack with NSX, vSAN, vRealize automation.</li>" +
+                "<li><strong>Balanced:</strong> Microsoft Azure Stack HCI — hybrid-ready, Windows-centric hyperconvergence with Azure integration.</li>" +
+                "<li><strong>Cost-Optimized:</strong> Proxmox VE or XCP-ng with Ceph — highly scalable, solid HA with robust community tooling.</li>" +
+                "</ul>";
         } else {
-            hypervisorRecommendation = "VMware Cloud Foundation, Red Hat OpenShift Virtualization, or an enterprise Kubernetes-based hypervisor (for cloud-scale and hyperconverged environments)";
+            hypervisorRecommendation =
+                "<p><strong>Hypervisors for Cloud-Scale / HCI Deployments (100+ VMs):</strong></p>" +
+                "<ul>" +
+                "<li><strong>Performance:</strong> VMware Cloud Foundation + NSX-T/vSAN — private cloud infrastructure with centralized governance and automation.</li>" +
+                "<li><strong>Balanced:</strong> Red Hat OpenShift Virtualization or Azure Stack HCI — ideal for hybrid workloads, Kubernetes-native or Windows-integrated.</li>" +
+                "<li><strong>Cost-Optimized:</strong> OpenStack with KVM, or Harvester — full-stack DIY, great for highly skilled DevOps/SRE teams managing scale-out environments.</li>" +
+                "</ul>" +
+                "<p><small><strong>Note:</strong> Hyper-V at this tier requires significant Windows infrastructure expertise and licensing investment.</small></p>";
         }
     
         // Storage approach following industry best practices based on performance, scalability, and redundancy
         let storageApproach;
-    
-        if (results.storageWithOverheadTB < 20) {
-            storageApproach = "Enterprise NVMe SSDs in a direct-attached (DAS) or NAS configuration with RAID10 for high IOPS and redundancy.";
+
+        if (results.storageWithOverheadTB < 5) {
+            storageApproach =
+                "<p><strong>Recommended Storage Options for Under 5TB:</strong></p>" +
+                "<ul>" +
+                "<li><strong>Performance:</strong> PCIe Gen4 NVMe SSDs in RAID1 or RAID10 — excellent for edge deployments and low-channel-count systems.</li>" +
+                "<li><strong>Balanced:</strong> Compact NAS (e.g., Synology/QNAP) with SATA SSDs in RAID1 — simple and effective.</li>" +
+                "<li><strong>Cost-Optimized:</strong> 7200 RPM HDDs in RAID1 — suitable for low-write environments and motion-triggered recording.</li>" +
+                "</ul>";
+        } else if (results.storageWithOverheadTB < 20) {
+            storageApproach =
+                "<p><strong>Recommended Storage Options for 5–20TB:</strong></p>" +
+                "<ul>" +
+                "<li><strong>Performance:</strong> Enterprise U.2/U.3 NVMe SSDs in DAS or NAS with RAID10 — high throughput and resilience.</li>" +
+                "<li><strong>Balanced:</strong> Mixed SATA SSD and HDD setup in RAID10 or RAID5 — ideal for moderate performance and cost.</li>" +
+                "<li><strong>Cost-Optimized:</strong> High-RPM HDDs in RAID10 or RAID1 with hardware RAID — reliable and economical.</li>" +
+                "</ul>";
+        } else if (results.storageWithOverheadTB < 50) {
+            storageApproach =
+                "<p><strong>Recommended Storage Options for 20–50TB:</strong></p>" +
+                "<ul>" +
+                "<li><strong>Performance:</strong> NVMe SSDs with hardware RAID10 in a small SAN with dual power/network paths.</li>" +
+                "<li><strong>Balanced:</strong> SSD cache with HDD RAID6 in entry-level SANs or advanced NAS systems.</li>" +
+                "<li><strong>Cost-Optimized:</strong> 12G SAS HDDs in RAID6 with write-back caching — good capacity with decent protection.</li>" +
+                "</ul>";
         } else if (results.storageWithOverheadTB < 100) {
-            storageApproach = "Hybrid storage (SSD + HDD) using a mid-tier SAN with dedicated iSCSI or Fiber Channel (FC) storage networking.";
+            storageApproach =
+                "<p><strong>Recommended Storage Options for 50–100TB:</strong></p>" +
+                "<ul>" +
+                "<li><strong>Performance:</strong> NVMe-based SAN with Fibre Channel or NVMe-oF and RAID6 or erasure coding.</li>" +
+                "<li><strong>Balanced:</strong> Hybrid SAN using SSD cache and HDD RAID60 — balanced cost and protection.</li>" +
+                "<li><strong>Cost-Optimized:</strong> High-capacity HDDs in RAID60 with fast cache and iSCSI multipathing.</li>" +
+                "</ul>";
+        } else if (results.storageWithOverheadTB < 250) {
+            storageApproach =
+                "<p><strong>Recommended Storage Options for 100–250TB:</strong></p>" +
+                "<ul>" +
+                "<li><strong>Performance:</strong> All-Flash SAN with NVMe-oF, dual controllers, and RAID6 or 8+2 erasure coding.</li>" +
+                "<li><strong>Balanced:</strong> SDS with SSD caching and RAID60 HDD arrays — scalable and resilient (e.g., TrueNAS, StarWind).</li>" +
+                "<li><strong>Cost-Optimized:</strong> Large HDD RAID60 pools with SSD write journals and 25GbE or faster networking.</li>" +
+                "</ul>";
         } else if (results.storageWithOverheadTB < 500) {
-            storageApproach = "All-Flash SAN (AFA) or high-performance NVMe-based storage arrays with dual controllers and redundant paths.";
+            storageApproach =
+                "<p><strong>Recommended Storage Options for 250–500TB:</strong></p>" +
+                "<ul>" +
+                "<li><strong>Performance:</strong> Scale-out NVMe storage (e.g., Pure, VAST, or custom Ceph) with erasure coding.</li>" +
+                "<li><strong>Balanced:</strong> Tiered RAID60 SAN or SDS with multipath and dual PSUs.</li>" +
+                "<li><strong>Cost-Optimized:</strong> High-density HDD nodes with SSD journals and auto-tiering for efficiency.</li>" +
+                "</ul>";
+        } else if (results.storageWithOverheadTB < 1000) {
+            storageApproach =
+                "<p><strong>Recommended Storage Options for 500–1000TB:</strong></p>" +
+                "<ul>" +
+                "<li><strong>Performance:</strong> Hyperconverged infrastructure (HCI) with NVMe tiers and RDMA fabrics (e.g., RoCEv2).</li>" +
+                "<li><strong>Balanced:</strong> Scale-out SDS using HDD and SSD mix with 4+2 or 6+2 erasure coding.</li>" +
+                "<li><strong>Cost-Optimized:</strong> RAID60 HDD nodes with SSD cache and 25/100GbE networking for rebuild performance.</li>" +
+                "</ul>";
         } else {
-            storageApproach = "Hyperconverged infrastructure (HCI) using vSAN, Nutanix, or Dell VxRail for scalable, high-availability storage with distributed redundancy.";
+            storageApproach =
+                "<p><strong>Recommended Storage Options for Over 1PB:</strong></p>" +
+                "<ul>" +
+                "<li><strong>Performance:</strong> HCI or disaggregated NVMe platforms with parallel file systems (e.g., BeeGFS, Lustre).</li>" +
+                "<li><strong>Balanced:</strong> Distributed SDS clusters using Ceph or GlusterFS — scalable with fast recovery.</li>" +
+                "<li><strong>Cost-Optimized:</strong> Multi-node RAID60 HDD clusters with erasure-coded object storage for long-term retention.</li>" +
+                "</ul>";
         }
     
         // High Availability (HA) recommendations following industry standards for redundancy and disaster recovery
