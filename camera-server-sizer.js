@@ -1518,8 +1518,11 @@ const CameraServerSizer = {
     
             // Scaling Recommendations
             let scalingRecs = '';
-            const expansionCapacity = Math.floor((results.raidConfig.usableCapacity - results.storageWithOverheadTB) /
-                (results.storageWithOverheadTB / this.inputs.cameraCount));
+            const storagePerCamera = results.totalRawStorageTB / this.inputs.cameraCount;
+
+            const expansionCapacity = Math.floor(
+                (results.raidConfig.usableCapacity - results.storageWithOverheadTB) / storagePerCamera
+            );
             
             if (expansionCapacity > 0) {
                 scalingRecs += `
