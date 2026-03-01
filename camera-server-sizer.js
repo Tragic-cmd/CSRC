@@ -860,7 +860,7 @@ const CameraServerSizer = {
                         arrayCount * dataPerArray * hdSizeTB * 0.93;
                     break;
                 }
-                
+
                 case 'RAID10':
                     usableCapacityMultiplier = (n) => (n / 2) * hdSizeTB * 0.96;
                     totalDrives = Math.ceil(requiredStorageTB / (hdSizeTB * 0.48)) * 2;
@@ -871,9 +871,11 @@ const CameraServerSizer = {
                 case 'RAID60': {
                     const drivesPerGroup = 12; // 10 data + 2 parity
                     const usablePerGroup = (drivesPerGroup - 2) * hdSizeTB * 0.93;
-                    arrayCount = Math.ceil(requiredStorageTB / usablePerGroup);
+                    const baseArrayCount = Math.ceil(requiredStorageTB / usablePerGroup);
+                    arrayCount = baseArrayCount * 2 // RAID 60 stripes across 2x RAID 6 groups
+
                     drivesPerArray = new Array(arrayCount).fill(drivesPerGroup);
-                    totalDrives = drivesPerArray.reduce((sum, d) => sum + d, 0);
+                    totalDrives = arrayCount * drivesPerGroup;
     
                     usableCapacityMultiplier = () => {
                         return arrayCount * (drivesPerGroup - 2) * hdSizeTB * 0.93;
