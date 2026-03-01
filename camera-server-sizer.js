@@ -1662,6 +1662,7 @@ const CameraServerSizer = {
             document.getElementById('storageBuffer').value = config.storageBuffer * 100;
             document.getElementById('filesystemOverhead').value = config.filesystemOverhead * 100;
             document.getElementById('maxCamerasPerServer').value = config.maxCamerasPerServer;
+            document.getElementById('haRedundancy').value = config.haRedundancy ?? 1;
             document.getElementById('hardwareAcceleration').value = config.hardwareAcceleration;
             
             // Show/hide hours per day input based on recording mode
