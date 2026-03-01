@@ -467,7 +467,7 @@ const CameraServerSizer = {
                 resolution, compression, frameRate, motionActivity,
                 recordingMode, hoursPerDay, cameraCount, retentionDays,
                 storageBuffer, filesystemOverhead, hdSize,
-                redundancyLevel, maxCamerasPerServer, hardwareAcceleration
+                redundancyLevel, maxCamerasPerServer, hardwareAcceleration, haRedundancy
             } = this.inputs;
     
             // --- Bitrate and Storage ---
@@ -543,7 +543,7 @@ const CameraServerSizer = {
     
     // Calculate number of physical hosts needed
     calculatePhysicalHosts: function(vmCount, cpuCoresPerVM, ramPerVM, haRedundancy) {
-        const haBuffer = parseInt(haRedundancy); // N+1
+        const haBuffer = parseInt(haRedundancy);
         // Typical enterprise server specs
         const coresPerPhysicalHost = 192; // Dual socket: 2x AMD EPYC 9654 (96 cores each)
         const ramPerPhysicalHost = 1024; // 1TB RAM per host, consistent with per-host recommendations
