@@ -544,15 +544,15 @@ const CameraServerSizer = {
     calculatePhysicalHosts: function(vmCount, cpuCoresPerVM, ramPerVM) {
         const haBuffer = 1; // N+1
         // Typical enterprise server specs
-        const coresPerPhysicalHost = 64; // Dual socket server with 32 cores per socket
-        const ramPerPhysicalHost = 512; // Total RAM per host in GB
+        const coresPerPhysicalHost = 192; // Dual socket: 2x AMD EPYC 9654 (96 cores each)
+        const ramPerPhysicalHost = 1024; // 1TB RAM per host, consistent with per-host recommendations
         
         // Calculate hosts needed based on CPU cores (with overcommit factor)
         const cpuOvercommitFactor = 2; // 1.5x to 2x is typical for surveillance workloads
         const hostsNeededForCPU = Math.ceil((vmCount * cpuCoresPerVM) / (coresPerPhysicalHost * cpuOvercommitFactor));
         
         // Calculate hosts needed based on RAM (with smaller overcommit factor)
-        const ramOvercommitFactor = 1.2; // More conservative for RAM
+        const ramOvercommitFactor = 1.1; // Tightened from 1.2 — surveillance RAM usage is sustained, not bursty
         const hostsNeededForRAM = Math.ceil((vmCount * ramPerVM) / (ramPerPhysicalHost * ramOvercommitFactor));
         
         // Take the higher of the two requirements
