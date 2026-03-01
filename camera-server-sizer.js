@@ -893,6 +893,8 @@ const CameraServerSizer = {
             const usableCapacity = typeof usableCapacityMultiplier === 'function'
                 ? usableCapacityMultiplier(totalDrives)
                 : usableCapacityMultiplier;
+
+            const capacityPerArray = drivesPerArray.map(drives => (drives - 2) * hdSizeTB * 0.93);
     
             return {
                 totalDrives,
@@ -901,7 +903,8 @@ const CameraServerSizer = {
                 totalRawCapacity,
                 usableCapacity,
                 arrayCount,
-                drivesPerArray
+                drivesPerArray,
+                capacityPerArray
             };
     
         } catch (error) {
