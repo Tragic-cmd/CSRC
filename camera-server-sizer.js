@@ -1318,15 +1318,18 @@ const CameraServerSizer = {
             const virtualRecs = this.generateVirtualizationRecommendations(results);
     
             // Physical Infrastructure
-            document.getElementById('physicalHostsNeeded').textContent = results.physicalHostsNeeded;
-            document.getElementById('hypervisorRecommendation').textContent = virtualRecs.hypervisorRecommendation;
-            document.getElementById('storageApproach').textContent = virtualRecs.storageApproach;
-            document.getElementById('cpuRecommendation').textContent = virtualRecs.hostRecommendation.cpuRecommendation;
-            document.getElementById('ramRecommendation').textContent = virtualRecs.hostRecommendation.ramRecommendation;
+            // document.getElementById('physicalHostsNeeded').textContent = results.physicalHostsNeeded;
+            // document.getElementById('hypervisorRecommendation').textContent = virtualRecs.hypervisorRecommendation;
+            // document.getElementById('storageApproach').textContent = virtualRecs.storageApproach;
+            // document.getElementById('cpuRecommendation').textContent = virtualRecs.hostRecommendation.cpuRecommendation;
+            // document.getElementById('ramRecommendation').textContent = virtualRecs.hostRecommendation.ramRecommendation;
     
+            const haLabels = { 0: 'No HA buffer configured.', 1: 'N+1 redundancy is included — 1 additional host is reserved for failover. For N+2 (dual failure tolerance), add 1 further host.', 2: 'N+2 redundancy is included — 2 additional hosts are reserved for failover.' };
+            const haNote = haLabels[this.inputs.haRedundancy] ?? 'HA buffer applied.';
+
             document.getElementById('physicalAnalysis').innerHTML = `
                 <p><strong>Estimated Physical Servers:</strong> ${results.physicalHostsNeeded}</p>
-                <p><strong>High Availability Note:</strong> If redundancy and high availability (HA) are required, plan to double the number of physical hosts and ensure storage/network components are also redundant.</p>
+                <p><strong>High Availability Note:</strong> ${haNote}</p>
                 <p><strong>Recommended Hypervisor:</strong> ${virtualRecs.hypervisorRecommendation}</p>
                 <p><strong>Storage Architecture:</strong> ${virtualRecs.storageApproach}</p>
                 <p><strong>Per-Host Hardware:</strong></p>
