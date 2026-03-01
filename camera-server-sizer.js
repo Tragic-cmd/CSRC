@@ -304,6 +304,7 @@ const CameraServerSizer = {
             hardwareAcceleration: document.getElementById('hardwareAcceleration').value,
             hdSize: parseInt(document.getElementById('hdSize').value),
             redundancyLevel: document.getElementById('redundancyLevel').value,
+            haRedundancy: parseInt(document.getElementById('haRedundancy').value),
             storageBuffer: parseInt(document.getElementById('storageBuffer').value) / 100,
             maxCamerasPerServer: parseInt(document.getElementById('maxCamerasPerServer').value),
             filesystemOverhead: parseInt(document.getElementById('filesystemOverhead').value) / 100
@@ -506,7 +507,7 @@ const CameraServerSizer = {
             const networkBandwidth = camerasPerVM * bitrateMbps * networkOverhead;
     
             // --- Host Calculation ---
-            const physicalHostsNeeded = this.calculatePhysicalHosts(vmsNeeded, cpuCoresPerVM, ramPerVM);
+            const physicalHostsNeeded = this.calculatePhysicalHosts(vmsNeeded, cpuCoresPerVM, ramPerVM, haRedundancy);
     
             return {
                 bitrateMbps,
@@ -541,8 +542,8 @@ const CameraServerSizer = {
     },
     
     // Calculate number of physical hosts needed
-    calculatePhysicalHosts: function(vmCount, cpuCoresPerVM, ramPerVM) {
-        const haBuffer = 1; // N+1
+    calculatePhysicalHosts: function(vmCount, cpuCoresPerVM, ramPerVM, haRedundancy) {
+        const haBuffer = parseInt(haRedundancy); // N+1
         // Typical enterprise server specs
         const coresPerPhysicalHost = 192; // Dual socket: 2x AMD EPYC 9654 (96 cores each)
         const ramPerPhysicalHost = 1024; // 1TB RAM per host, consistent with per-host recommendations

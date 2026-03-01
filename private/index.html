@@ -179,6 +179,16 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="haRedundancy">Host Redundancy Level:</label>
+                    <select id="haRedundancy">
+                        <option value="0" selected>None (No HA buffer)</option>
+                        <option value="1">N+1 (Standard HA)</option>
+                        <option value="2">N+2 (High availability / dual failure)</option>
+                    </select>
+                    <small class="form-text text-muted">Number of additional hosts reserved for failover. N+1 is standard; N+2 is recommended for mission-critical deployments.</small>
+                </div>
+
+                <div class="form-group">
                     <label for="hardwareAcceleration">Hardware Acceleration:</label>
                     <select id="hardwareAcceleration">
                         <option value="none">None (Software Only) Uses only your CPU for processing.</option>
