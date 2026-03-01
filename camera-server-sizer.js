@@ -848,36 +848,19 @@ const CameraServerSizer = {
                     break;
     
                 case 'RAID6': {
-                    const usablePerDrive = hdSizeTB * 0.93;
-                    const drivesNeeded = Math.ceil(requiredStorageTB / usablePerDrive) + 2;
-                    totalDrives = Math.max(drivesNeeded, minDrives);
-    
-                    const raidGroups = [];
-                    let remainingDrives = totalDrives;
-    
-                    while (remainingDrives >= 10) {
-                        raidGroups.push(12);
-                        remainingDrives -= 10;
-                    }
-    
-                    if (remainingDrives > 0) {
-                        const lastGroupSize = remainingDrives + 2;
-                        const finalGroup = lastGroupSize < minDrives ? minDrives : lastGroupSize;
-                        raidGroups.push(finalGroup);
-                    }
-    
-                    totalDrives = raidGroups.reduce((sum, g) => sum + g, 0);
-                    drivesPerArray = raidGroups;
-                    arrayCount = raidGroups.length;
-    
-                    usableCapacityMultiplier = () => {
-                        return raidGroups.reduce((sum, groupSize) => {
-                            return sum + (groupSize - 2) * hdSizeTB * 0.93;
-                        }, 0);
-                    };
+                    const arraySize = 12;
+                    const dataPerArray = arraySize - 2;
+                    const usablePerArray = dataPerArray * hdSizeTB * 0.93;
+
+                    arrayCount = Math.ceil(requiredStorageTB / usablePerArray);
+                    drivesPerArray = new Array(arrayCount).fill(arraySize);
+                    totalDrives = arrayCount * arraySize;
+
+                    usableCapacityMultiplier = () =>
+                        arrayCount * dataPerArray * hdSizeTB * 0.93;
                     break;
                 }
-    
+                
                 case 'RAID10':
                     usableCapacityMultiplier = (n) => (n / 2) * hdSizeTB * 0.96;
                     totalDrives = Math.ceil(requiredStorageTB / (hdSizeTB * 0.48)) * 2;
@@ -899,34 +882,7 @@ const CameraServerSizer = {
                 }
     
                 default: {
-                    const usablePerDrive = hdSizeTB * 0.93;
-                    const drivesNeeded = Math.ceil(requiredStorageTB / usablePerDrive) + 2;
-                    totalDrives = Math.max(drivesNeeded, minDrives);
-    
-                    const raidGroups = [];
-                    let remainingDrives = totalDrives;
-    
-                    while (remainingDrives >= 10) {
-                        raidGroups.push(12);
-                        remainingDrives -= 10;
-                    }
-    
-                    if (remainingDrives > 0) {
-                        const lastGroupSize = remainingDrives + 2;
-                        const finalGroup = lastGroupSize < minDrives ? minDrives : lastGroupSize;
-                        raidGroups.push(finalGroup);
-                    }
-    
-                    totalDrives = raidGroups.reduce((sum, g) => sum + g, 0);
-                    drivesPerArray = raidGroups;
-                    arrayCount = raidGroups.length;
-    
-                    usableCapacityMultiplier = () => {
-                        return raidGroups.reduce((sum, groupSize) => {
-                            return sum + (groupSize - 2) * hdSizeTB * 0.93;
-                        }, 0);
-                    };
-                    break;
+                    throw new Error(`Unsupported RAID level: ${raidLevel}`);
                 }
             }
     
