@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /register.html
+Disallow: /forgot-password.html
+
+Sitemap: https://camera-server-sizing-calculator.onrender.com/sitemap.xml
