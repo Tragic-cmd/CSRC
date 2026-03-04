@@ -7,22 +7,40 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="styles.css" />
   <style>
-    /* ── Login page two-column layout ── */
+    /* ── Tighten the logo so it doesn't dominate ── */
+    .login-logo-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 6px;
+    }
+    .login-logo-row img.studio-logo {
+      height: 48px;
+      width: auto;
+    }
+
+    /* ── Main stacked layout ── */
     .login-page-wrapper {
       display: flex;
-      gap: 40px;
-      align-items: flex-start;
+      flex-direction: column;
+      gap: 28px;
       margin-top: 10px;
     }
 
-    /* Left: marketing panel */
+    /* Marketing panel — full width */
     .login-marketing {
-      flex: 1 1 55%;
+      width: 100%;
       padding: 32px 36px;
       background: linear-gradient(145deg, rgba(27,122,122,0.08) 0%, rgba(52,152,219,0.10) 100%);
       border-radius: 10px;
       border: 1px solid rgba(27,122,122,0.18);
+      box-sizing: border-box;
       animation: fadeSlideIn 0.5s ease both;
+    }
+
+    body.dark-mode .login-marketing {
+      background: linear-gradient(145deg, rgba(27,122,122,0.12) 0%, rgba(52,152,219,0.08) 100%);
+      border-color: rgba(52,152,219,0.2);
     }
 
     .login-marketing .tagline {
@@ -40,19 +58,12 @@
       line-height: 1.6;
     }
 
-    body.dark-mode .login-marketing .sub-tagline {
-      color: #aaa;
-    }
-
-    body.dark-mode .login-marketing {
-      background: linear-gradient(145deg, rgba(27,122,122,0.12) 0%, rgba(52,152,219,0.08) 100%);
-      border-color: rgba(52,152,219,0.2);
-    }
+    body.dark-mode .login-marketing .sub-tagline { color: #aaa; }
 
     /* Feature cards grid */
     .feature-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(4, 1fr);
       gap: 14px;
       margin-bottom: 28px;
     }
@@ -97,9 +108,7 @@
       line-height: 1.5;
     }
 
-    body.dark-mode .feature-card .fc-desc {
-      color: #aaa;
-    }
+    body.dark-mode .feature-card .fc-desc { color: #aaa; }
 
     /* Example output strip */
     .example-strip {
@@ -108,6 +117,8 @@
       border-radius: 0 8px 8px 0;
       padding: 14px 18px;
     }
+
+    body.dark-mode .example-strip { background: rgba(27,122,122,0.10); }
 
     .example-strip .es-label {
       font-size: 0.72rem;
@@ -121,13 +132,10 @@
     .example-strip .es-stats {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px 20px;
+      gap: 10px 32px;
     }
 
-    .es-stat {
-      display: flex;
-      flex-direction: column;
-    }
+    .es-stat { display: flex; flex-direction: column; }
 
     .es-stat .es-val {
       font-size: 1.15rem;
@@ -142,18 +150,29 @@
       margin-top: 2px;
     }
 
-    body.dark-mode .es-stat .es-key {
-      color: #999;
-    }
+    body.dark-mode .es-stat .es-key { color: #999; }
 
-    body.dark-mode .example-strip {
-      background: rgba(27,122,122,0.10);
-    }
-
-    /* Right: login form panel */
+    /* Login form — centred card below marketing */
     .login-form-panel {
-      flex: 0 0 320px;
-      animation: fadeSlideIn 0.5s 0.1s ease both;
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+      background: rgba(191,240,255,0.45);
+      border: 1px solid rgba(27,122,122,0.18);
+      border-radius: 10px;
+      padding: 32px 36px;
+      box-sizing: border-box;
+      animation: fadeSlideIn 0.5s 0.15s ease both;
+    }
+
+    body.dark-mode .login-form-panel {
+      background: rgba(30,42,56,0.6);
+      border-color: rgba(52,152,219,0.2);
+    }
+
+    .login-form-panel h2 {
+      margin-top: 0;
+      text-align: center;
     }
 
     @keyframes fadeSlideIn {
@@ -161,19 +180,15 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ── Mobile: stack vertically ── */
+    /* ── Mobile ── */
     @media (max-width: 768px) {
-      .login-page-wrapper {
-        flex-direction: column;
-        gap: 24px;
-      }
-      .login-form-panel {
-        flex: unset;
-        width: 100%;
-      }
-      .feature-grid {
-        grid-template-columns: 1fr;
-      }
+      .feature-grid { grid-template-columns: 1fr 1fr; }
+      .login-form-panel { max-width: 100%; }
+      .login-marketing { padding: 20px; }
+    }
+
+    @media (max-width: 480px) {
+      .feature-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -189,13 +204,15 @@
         <img src="/camera.svg" alt="Camera Server Sizing Calculator Logo">
         <h1>Camera Server Sizing Calculator</h1>
       </header>
-      <img src="/tragicstudios.svg" alt="Tragic Studios" />
+      <div class="login-logo-row">
+        <img class="studio-logo" src="/tragicstudios.svg" alt="Tragic Studios" />
+      </div>
     </div>
 
-    <!-- Two-column login layout -->
+    <!-- Stacked login layout -->
     <div class="login-page-wrapper">
 
-      <!-- ── LEFT: Marketing Panel ── -->
+      <!-- ── TOP: Marketing Panel ── -->
       <div class="login-marketing">
         <p class="tagline">Right-size your surveillance infrastructure — instantly.</p>
         <p class="sub-tagline">
@@ -251,7 +268,7 @@
         </div>
       </div>
 
-      <!-- ── RIGHT: Login Form Panel ── -->
+      <!-- ── BOTTOM: Login Form Panel ── -->
       <div class="login-form-panel">
         <h2 style="margin-top:0;">Login</h2>
 
