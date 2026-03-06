@@ -264,9 +264,9 @@ app.post('/login', async (req, res) => {
           }
 
           if (req.headers["content-type"] === "application/json") {
-            res.json({ message: "Login successful.", redirect: "/" });
+            res.json({ message: "Login successful.", redirect: "/calc-tool.html" });
           } else {
-            res.redirect("/");
+            res.redirect("/calc-tool.html");
           }
       });
 
