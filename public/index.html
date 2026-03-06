@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Camera Server Sizing Calculator – Enterprise VMS Infrastructure Planning</title>
+  <meta name="description" content="Right-size your surveillance infrastructure instantly. Calculate storage, RAID arrays, VMs, and physical host requirements for any IP camera deployment. Free to try." />
+  <link rel="canonical" href="https://www.camservercalc.com/" />
+  <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <meta property="og:title" content="Camera Server Sizing Calculator – Enterprise VMS Infrastructure Planning" />
+  <meta property="og:description" content="Right-size your surveillance infrastructure instantly. Storage, RAID, VM, and host recommendations for any camera deployment." />
+  <meta property="og:url" content="https://www.camservercalc.com/" />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --teal:       #1b7a7a;
+      --teal-light: #22a0a0;
+      --teal-dim:   rgba(27,122,122,0.12);
+      --blue:       #3498db;
+      --sky:        rgb(191,240,255);
+      --sky-bg:     rgb(50,207,255);
+      --text:       #1a2a2a;
+      --muted:      #4a6060;
+      --card-bg:    rgba(191,240,255,0.55);
+      --border:     rgba(27,122,122,0.18);
+      --white:      #fff;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--sky-bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Noise overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── NAV ── */
+    nav {
+      padding: 18px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+    .nav-brand img { height: 40px; width: 40px; }
+    .nav-brand-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--teal);
+      line-height: 1.15;
+    }
+    .nav-brand-text span { display: block; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; }
+    .nav-cta {
+      background: var(--teal);
+      color: var(--sky);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 10px 22px;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s;
+      display: inline-block;
+    }
+    .nav-cta:hover { background: var(--teal-light); transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 72px 0 56px;
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 48px;
+      align-items: center;
+    }
+    .hero-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--teal);
+      background: var(--teal-dim);
+      border: 1px solid var(--border);
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      animation: fadeUp 0.5s ease both;
+    }
+    .hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2.2rem, 4vw, 3.3rem);
+      font-weight: 800;
+      color: var(--teal);
+      line-height: 1.1;
+      margin-bottom: 20px;
+      animation: fadeUp 0.5s 0.08s ease both;
+    }
+    .hero h1 em {
+      font-style: normal;
+      color: var(--blue);
+    }
+    .hero-sub {
+      font-size: 1.05rem;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 540px;
+      margin-bottom: 36px;
+      animation: fadeUp 0.5s 0.16s ease both;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      animation: fadeUp 0.5s 0.24s ease both;
+    }
+    .btn-primary {
+      background: var(--teal);
+      color: var(--sky);
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 13px 28px;
+      border-radius: 7px;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary:hover { background: var(--teal-light); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(27,122,122,0.2); }
+    .btn-secondary {
+      background: transparent;
+      color: var(--teal);
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 13px 28px;
+      border-radius: 7px;
+      text-decoration: none;
+      border: 2px solid var(--teal);
+      transition: background 0.2s, transform 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-secondary:hover { background: var(--teal-dim); transform: translateY(-2px); }
+
+    /* ── HERO CARD (right col) ── */
+    .hero-card {
+      background: rgba(191,240,255,0.7);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      box-shadow: 0 12px 40px rgba(27,122,122,0.10);
+      animation: fadeUp 0.5s 0.3s ease both;
+      backdrop-filter: blur(6px);
+    }
+    .hero-card-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.67rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--teal);
+      border-left: 3px solid var(--teal);
+      padding-left: 10px;
+      margin-bottom: 18px;
+    }
+    .hero-card-scenario {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 18px;
+      line-height: 1.5;
+      padding: 10px 12px;
+      background: rgba(27,122,122,0.06);
+      border-radius: 6px;
+    }
+    .hero-card-scenario strong { color: var(--teal); }
+    .output-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .output-cell {
+      background: rgba(255,255,255,0.6);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .output-val {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--teal);
+      line-height: 1;
+      display: block;
+    }
+    .output-key {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-top: 4px;
+      display: block;
+    }
+    .output-bar {
+      background: rgba(27,122,122,0.08);
+      border-radius: 6px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .output-bar strong { color: var(--teal); font-family: 'DM Mono', monospace; }
+
+    /* ── DIVIDER ── */
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--teal), transparent);
+      opacity: 0.3;
+      margin: 8px 0;
+    }
+
+    /* ── HOW IT WORKS ── */
+    .section { padding: 64px 0; }
+    .section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 10px;
+    }
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 800;
+      color: var(--teal);
+      margin-bottom: 14px;
+      line-height: 1.15;
+    }
+    .section-sub {
+      font-size: 1rem;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 560px;
+      margin-bottom: 48px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .step-card {
+      background: rgba(191,240,255,0.55);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 24px;
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .step-card:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(27,122,122,0.12); }
+    .step-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: var(--teal);
+      opacity: 0.18;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+    .step-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--teal);
+      margin-bottom: 8px;
+    }
+    .step-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ── FEATURES ── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .feature-card {
+      background: rgba(191,240,255,0.55);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .feature-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(27,122,122,0.12); }
+    .fc-icon { font-size: 1.6rem; margin-bottom: 10px; display: block; }
+    .fc-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--teal);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .fc-desc { font-size: 0.83rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── USE CASES ── */
+    .usecases {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .usecase-card {
+      border-left: 3px solid var(--teal);
+      padding: 18px 20px;
+      background: rgba(191,240,255,0.4);
+      border-radius: 0 10px 10px 0;
+    }
+    .usecase-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: var(--teal);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .usecase-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.55; }
+
+    /* ── BOTTOM CTA ── */
+    .cta-section {
+      padding: 72px 0;
+      text-align: center;
+    }
+    .cta-box {
+      background: linear-gradient(135deg, rgba(27,122,122,0.1) 0%, rgba(52,152,219,0.12) 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 56px 48px;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .cta-box h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 800;
+      color: var(--teal);
+      margin-bottom: 14px;
+    }
+    .cta-box p { font-size: 0.95rem; color: var(--muted); line-height: 1.7; margin-bottom: 32px; }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 28px 0;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    footer a { color: var(--teal); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    .footer-logo { display: flex; align-items: center; gap: 8px; }
+    .footer-logo img { height: 28px; opacity: 0.7; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SCROLL REVEAL ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; }
+      .hero-card { display: none; }
+      .steps { grid-template-columns: 1fr; }
+      .usecases { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .features { grid-template-columns: 1fr; }
+      .cta-box { padding: 36px 24px; }
+      footer { flex-direction: column; gap: 10px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <div class="container">
+    <nav>
+      <a class="nav-brand" href="/">
+        <img src="/camera.svg" alt="Camera icon" />
+        <div class="nav-brand-text">
+          CamServerCalc
+          <span>Enterprise VMS Sizing</span>
+        </div>
+      </a>
+      <a href="/login.html" class="nav-cta">Login →</a>
+    </nav>
+  </div>
+
+  <!-- HERO -->
+  <div class="container">
+    <section class="hero">
+      <div class="hero-left">
+        <div class="hero-eyebrow">Enterprise VMS Infrastructure Tool</div>
+        <h1>Right-size your surveillance infrastructure — <em>instantly.</em></h1>
+        <p class="hero-sub">
+          Stop guessing. The Camera Server Sizing Calculator delivers precise storage, RAID, VM, and
+          physical host recommendations for large-scale IP camera deployments — in seconds.
+        </p>
+        <div class="hero-actions">
+          <a href="/login.html" class="btn-primary">Get Started →</a>
+          <a href="#how-it-works" class="btn-secondary">See How It Works</a>
+        </div>
+      </div>
+
+      <div class="hero-card">
+        <div class="hero-card-label">Example Output</div>
+        <div class="hero-card-scenario">
+          <strong>1,500 cameras</strong> · 720p · H.264 · 10 fps · 30-day retention
+        </div>
+        <div class="output-grid">
+          <div class="output-cell">
+            <span class="output-val">448 TB</span>
+            <span class="output-key">Usable storage required</span>
+          </div>
+          <div class="output-cell">
+            <span class="output-val">84 drives</span>
+            <span class="output-key">RAID 6 arrays @ 8 TB</span>
+          </div>
+          <div class="output-cell">
+            <span class="output-val">15 VMs</span>
+            <span class="output-key">6 cores / 40 GB RAM each</span>
+          </div>
+          <div class="output-cell">
+            <span class="output-val">3 hosts</span>
+            <span class="output-key">N+2 redundancy</span>
+          </div>
+        </div>
+        <div class="output-bar">
+          <span>Aggregate throughput</span>
+          <strong>2.8 Gbps</strong>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="container"><div class="section-divider"></div></div>
+
+  <!-- HOW IT WORKS -->
+  <div class="container" id="how-it-works">
+    <section class="section">
+      <div class="reveal">
+        <div class="section-label">How it works</div>
+        <h2 class="section-title">Three steps to a complete infrastructure plan</h2>
+        <p class="section-sub">No spreadsheets. No vendor calls. Just accurate, production-ready numbers based on your actual requirements.</p>
+      </div>
+      <div class="steps">
+        <div class="step-card reveal">
+          <div class="step-num">01</div>
+          <div class="step-title">Enter Your Camera Inputs</div>
+          <p class="step-desc">Specify camera count, resolution (360p–4K), frame rate, compression codec (H.264 or H.265), motion activity level, and recording schedule.</p>
+        </div>
+        <div class="step-card reveal" style="transition-delay:0.1s">
+          <div class="step-num">02</div>
+          <div class="step-title">Configure Retention & Redundancy</div>
+          <p class="step-desc">Set your retention period, RAID level preference, storage buffer, filesystem overhead, and VM or physical host redundancy model (N+1 or N+2).</p>
+        </div>
+        <div class="step-card reveal" style="transition-delay:0.2s">
+          <div class="step-num">03</div>
+          <div class="step-title">Get Your Full Sizing Report</div>
+          <p class="step-desc">Receive detailed storage capacity, drive groupings, RAID configurations, VM allocations, and physical host recommendations — ready for procurement.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="container"><div class="section-divider"></div></div>
+
+  <!-- FEATURES -->
+  <div class="container" id="features">
+    <section class="section">
+      <div class="reveal">
+        <div class="section-label">Features</div>
+        <h2 class="section-title">Every variable. Accounted for.</h2>
+        <p class="section-sub">Built for security integrators, IT architects, and enterprise VMS engineers who need numbers they can trust.</p>
+      </div>
+      <div class="features">
+        <div class="feature-card reveal">
+          <span class="fc-icon">🎥</span>
+          <p class="fc-title">Multi-Variable Camera Inputs</p>
+          <p class="fc-desc">Resolution, frame rate, compression codec (H.264 / H.265), motion activity, and recording mode — every variable accounted for in the bitrate model.</p>
+        </div>
+        <div class="feature-card reveal" style="transition-delay:0.08s">
+          <span class="fc-icon">🗄️</span>
+          <p class="fc-title">Precise Storage Sizing</p>
+          <p class="fc-desc">Per-camera bitrate modelling with configurable retention periods, storage buffer, and filesystem overhead for accurate usable capacity estimates.</p>
+        </div>
+        <div class="feature-card reveal" style="transition-delay:0.16s">
+          <span class="fc-icon">⚙️</span>
+          <p class="fc-title">RAID Array Recommendations</p>
+          <p class="fc-desc">Auto-grouped drive arrays for RAID 6, RAID 10, and RAID 60 — complete with fault tolerance, storage efficiency, and rebuild time estimates.</p>
+        </div>
+        <div class="feature-card reveal" style="transition-delay:0.24s">
+          <span class="fc-icon">🖥️</span>
+          <p class="fc-title">VM & Physical Host Sizing</p>
+          <p class="fc-desc">CPU cores, RAM, and network throughput per VM — with N+1 and N+2 host redundancy planning and hypervisor recommendations built in.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="container"><div class="section-divider"></div></div>
+
+  <!-- USE CASES -->
+  <div class="container">
+    <section class="section">
+      <div class="reveal">
+        <div class="section-label">Built for</div>
+        <h2 class="section-title">Who uses CamServerCalc?</h2>
+        <p class="section-sub">Wherever large-scale video management infrastructure needs to be specified accurately and fast.</p>
+      </div>
+      <div class="usecases">
+        <div class="usecase-card reveal">
+          <div class="usecase-title">Security Integrators</div>
+          <p class="usecase-desc">Generate accurate BOMs and infrastructure proposals for clients — before committing to a vendor quote.</p>
+        </div>
+        <div class="usecase-card reveal" style="transition-delay:0.1s">
+          <div class="usecase-title">IT Architects</div>
+          <p class="usecase-desc">Validate hypervisor and storage specs for on-premise VMS deployments across campus or multi-site environments.</p>
+        </div>
+        <div class="usecase-card reveal" style="transition-delay:0.2s">
+          <div class="usecase-title">Enterprise Security Teams</div>
+          <p class="usecase-desc">Plan infrastructure refresh cycles and capacity upgrades with confidence, backed by precise per-camera modelling.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- CTA -->
+  <div class="container">
+    <section class="cta-section">
+      <div class="cta-box reveal">
+        <h2>Ready to size your deployment?</h2>
+        <p>Create a free account and run your first calculation in minutes. Save and share configurations with your team.</p>
+        <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap;">
+          <a href="/login.html" class="btn-primary">Login to Get Started →</a>
+          <a href="/register.html" class="btn-secondary">Create Free Account</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="container">
+    <footer>
+      <div class="footer-logo">
+        <img src="/tragicstudios.svg" alt="Tragic Studios" />
+        <span>© 2026 Tragic Studios. All rights reserved.</span>
+      </div>
+      <div style="display:flex; gap:20px;">
+        <a href="/login.html">Login</a>
+        <a href="/register.html">Register</a>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>

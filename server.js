@@ -121,7 +121,7 @@ app.get('/profile', ensureAuthenticated, (req, res) => {
 });
 
 // Protected: Main tool page (Index) and Camera Sizer Script
-app.get('/', ensureAuthenticated, (req, res) => res.sendFile(path.join(__dirname, 'private/index.html')));
+app.get('/', ensureAuthenticated, (req, res) => res.sendFile(path.join(__dirname, 'private/calc-tool.html')));
 
 app.get('/camera-server-sizer.js', ensureAuthenticated, (req, res) => {
   res.type('application/javascript');
