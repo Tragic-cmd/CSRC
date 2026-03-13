@@ -1,197 +1,163 @@
-Camera Server Sizing Tool
-
-The Camera Server Sizing Tool is a comprehensive web-based application designed to help users accurately calculate server and storage requirements for IP camera deployments. The tool factors in camera resolution, frame rate, compression codec, storage retention period, and RAID configuration to deliver precise hardware recommendations.
-
-📌 Table of Contents
-
-1. [Installation](https://github.com/Tragic-cmd/CSRC#installation)
-       
-2. [Usage](https://github.com/Tragic-cmd/CSRC#usage)
-       
-3. [Features](https://github.com/Tragic-cmd/CSRC#features)
-       
-4. [Calculation Methodology](https://github.com/Tragic-cmd/CSRC#calculation-methodology)
-
-5. [Security Considerations](https://github.com/Tragic-cmd/CSRC#Security-Considerations)
-
-6. [Limitations & Margins of Error](https://github.com/Tragic-cmd/CSRC#Limitations-&-Margins-of-Error)
-       
-7. [Contributing](https://github.com/Tragic-cmd/CSRC#contributing)
-       
-9. [Contact](https://github.com/Tragic-cmd/CSRC#contact)
-
+# Camera Server Sizing Calculator
+ 
+A comprehensive web-based application for accurately sizing server and storage infrastructure for IP camera deployments. The tool models per-camera bitrate using codec, resolution, frame rate, and motion activity profiles to deliver precise storage, RAID, VM, and physical host recommendations.
+ 
+## 📌 Table of Contents
+ 
+1. [Installation](#installation)
+2. [Usage](#usage)
+3. [Features](#features)
+4. [Calculation Methodology](#calculation-methodology)
+5. [Security Considerations](#security-considerations)
+6. [Limitations & Margins of Error](#limitations--margins-of-error)
+7. [Contributing](#contributing)
+8. [Contact](#contact)
+ 
+---
+ 
 ## Installation
-
+ 
 ### Prerequisites
-
-Before installing, ensure the following dependencies are met:
-
-- Node.js (v16 or later) and npm installed on your system
-    
+ 
+- Node.js (v16 or later) and npm
 - A web browser
-    
-- Git for cloning the repository
-
+- Git
+- SQLite3 (included via the `better-sqlite3` or `sqlite3` npm package)
+ 
 ### Steps to Install
-
-
-```
+ 
+```bash
 # Clone the repository
 git clone https://github.com/github-username/camera-server-sizer.git
-
+ 
 # Navigate into the project directory
 cd camera-server-sizer
-
-# Install required dependencies
-npm install express body-parser jsonwebtoken bcrypt
-
+ 
+# Install dependencies
+npm install
+ 
 # Start the server
 npm start
-
 ```
-
-The application will now be accessible at http://localhost:3000.
-
+ 
+The application will be accessible at `http://localhost:3000`.
+ 
+---
+ 
 ## Usage
-
-    Open your browser and navigate to http://localhost:3000.
-
-    Enter details such as number of cameras, resolution, compression codec, and retention period.
-
-    Click on "Calculate Requirements" to generate results.
-
-    View detailed storage, RAID, server, and bandwidth recommendations.
-
-Example Usage
-
-npm start
-
-Once the server is running, access the tool via your browser, configure camera settings, and receive real-time recommendations.
-
+ 
+1. Register for a free account or log in.
+2. Enter your deployment parameters — camera count, resolution, codec, frame rate, motion activity profile, recording mode, and retention period.
+3. Configure RAID level, drive size, storage buffer, filesystem overhead, max cameras per VM, and HA redundancy.
+4. Click **Calculate** to generate a full sizing report.
+5. Save the configuration by name for later retrieval, export results to CSV, or print a formatted report.
+ 
 ### Add owner role to an account
-
-```sql
+ 
+```bash
 cd path/to/your/project
 sqlite3 users.db
-UPDATE users SET role = 'owner' WHERE username = 'administrator';
-SELECT username, role FROM users WHERE username = 'administrator';
 ```
-
+```sql
+UPDATE users SET role = 'owner' WHERE username = 'yourusername';
+SELECT username, role FROM users WHERE username = 'yourusername';
+```
+ 
+---
+ 
 ## Features
-
-![Screenshot 2025-03-23 005933](https://github.com/user-attachments/assets/ef421090-19f5-449f-9470-24083b8767f9)
-
-    User Authentication: Secure login, registration, and profile management.
-
-    Dynamic Storage Calculation: Estimates storage needs based on selected parameters.
-
-    RAID Configuration Analysis: Suggests optimal RAID configurations for redundancy.
-
-    Server Recommendation: Estimates the number of servers required based on camera load.
-
-    Network Bandwidth Estimation: Ensures adequate network capacity for video streams.
-
-    Performance Optimization Suggestions: Recommends best practices for efficient resource management.
-
-    Dark Mode Support: User-friendly interface with theme toggling.
-
-    Local Data Storage: Saves previous configurations for quick access.
-
+ 
+- **User Authentication** — Secure registration, login, and profile management with bcrypt password hashing and session-based auth.
+- **Advanced Bitrate Modelling** — Separate VBR and CBR paths per codec, with motion-weighted hourly bitrate averaging and adaptive minimum bitrate floors per resolution.
+- **Motion Activity Profiles** — 10 named profiles (Very Low → Very High) plus Day Only, Night Only, and Rush Hours, each with calibrated active/idle hour splits and bitrate multipliers.
+- **Codec Support** — MJPEG, H.264, H.264+, H.265, H.265 CBR, H.265+, and H.266.
+- **Storage Sizing** — Per-camera daily storage, total raw storage, configurable growth buffer, and filesystem overhead.
+- **RAID Configuration** — RAID 5, 6, 10, and 60 with auto-grouped 12-drive arrays, usable capacity, storage efficiency, fault tolerance, and estimated rebuild time.
+- **VM Sizing** — CPU cores (codec, resolution, frame rate, and hardware acceleration aware), RAM (non-linear scaling), and per-VM network throughput.
+- **Physical Host Sizing** — Host count based on CPU and RAM requirements with configurable N+1 or N+2 HA redundancy buffers.
+- **Architecture Recommendations** — Hypervisor selection, storage architecture, HA strategy, and networking guidance scaled to deployment size.
+- **Save & Load Configurations** — Named site configurations saved server-side and reloadable at any time.
+- **Export & Print** — CSV export for BOM generation and a formatted print report for client proposals.
+- **Dark Mode** — Full dark mode support with localStorage persistence.
+ 
+---
+ 
 ## Calculation Methodology
-
-The Camera Server Sizing Tool utilizes a set of formulas and pre-defined bitrate estimates to compute storage and processing needs:
-
-1. **Bitrate Calculation**: The tool estimates bitrate based on camera resolution, frame rate, and compression codec:
-    
-    where:
-    
-    - `BaseBitrate` is derived from industry standards per resolution,
-        
-    - `FrameRateFactor` adjusts for the selected FPS,
-        
-    - `CompressionFactor` accounts for codec efficiency (e.g., H.264 vs. H.265).
-        
-2. **Storage Calculation**:
-    
-    where:
-    
-    - `Bitrate` is in bits per second,
-        
-    - `86400` is the number of seconds per day,
-        
-    - `8` converts bits to bytes,
-        
-    - `1024^3` converts bytes to terabytes.
-        
-    
-    The total required storage is then adjusted based on retention period and additional factors such as filesystem overhead and RAID redundancy.
-    
-3. **Server Requirements**:
-    
-    - **CPU Estimation**: The CPU load is estimated based on the number of cameras, resolution, and enabled hardware acceleration.
-        
-    - **RAM Calculation**: RAM requirements are derived based on the number of concurrent video streams and processing demands.
-        
-    - **Network Bandwidth**: The required network bandwidth is calculated using the sum of all camera bitrates to ensure sufficient infrastructure capacity.
-
+ 
+### 1. Bitrate Calculation
+ 
+Bitrate is modelled per codec mode (VBR or CBR):
+ 
+- **Resolution factor** — baseline Mbps per resolution (720p → 8K)
+- **Compression factor** — codec efficiency multiplier (e.g. H.265 = 0.7×, H.266 = 0.45× relative to H.264)
+- **Framerate scaling** — non-linear power function (`fps / 30 ^ 0.95`), with a steeper penalty below 10 fps
+- **Motion profile weighting** — motion and idle bitrates are calculated separately and averaged across 24 hours using the profile's active/idle hour split
+- **Adaptive bitrate floor** — minimum bitrate enforced per resolution, codec, and framerate to prevent unrealistically low estimates
+- **VBR vs CBR** — VBR codecs (H.264, H.265, H.265+, H.266) apply separate motion and idle efficiency multipliers; CBR codecs hold a constant bitrate
+ 
+### 2. Storage Calculation
+ 
+```
+dailyGB       = bitrateMbps × 0.45 × recordingHoursPerDay
+totalRawTB    = dailyGB × cameraCount × retentionDays / 1024
+withBuffer    = totalRawTB × (1 + bufferFraction)
+finalStorage  = withBuffer × (1 + filesystemOverheadFraction)
+```
+ 
+### 3. RAID Configuration
+ 
+| Level   | Array Grouping       | Parity Drives | Efficiency         |
+|---------|----------------------|---------------|--------------------|
+| RAID 5  | Flexible             | 1             | (n−1) / n          |
+| RAID 6  | Auto-grouped, 12 drives | 2          | 10/12 × 0.93       |
+| RAID 10 | Mirrored pairs       | 50%           | n/2 × 0.96         |
+| RAID 60 | 2× RAID 6 groups     | 2 per group   | 10/12 × 0.93       |
+ 
+Rebuild time is estimated at ~150 GB/hr per failed drive.
+ 
+### 4. VM & Host Sizing
+ 
+- **CPU per camera** — base of 0.18 cores at 1080p / H.264 / 30fps, scaled by resolution multiplier, codec complexity, framerate, and hardware acceleration factor (full GPU = 0.12×, no acceleration = 1.0×)
+- **RAM per VM** — base 8 GB + per-camera allocation by resolution, with non-linear scaling above 32 cameras and 10% virtualisation overhead
+- **Physical hosts** — sized against dual-socket EPYC 9654 baselines (192 cores, 1 TB RAM) with a 2× CPU overcommit factor; HA buffer (N+1 or N+2) added on top
+ 
+---
+ 
 ## Security Considerations
-
-    User Authentication: Secure password hashing with bcrypt.
-
-    JWT-based Authentication: Ensures session integrity and protects against unauthorized access.
-
-    Input Validation: Prevents injection attacks and erroneous calculations.
-
-    Rate Limiting: Mitigates brute-force attacks.
-
-    Data Encryption: Secures sensitive user data.
-
-    ⚠️ Note: Security features rely on proper server configuration and HTTPS enforcement in production.
-
+ 
+- **Password hashing** — bcrypt with cost factor 12
+- **Session-based authentication** — server-side sessions with `express-session`
+- **Input validation** — all user inputs validated server-side before database operations
+- **Parameterised queries** — all database queries use parameterised statements to prevent SQL injection
+- **Rate limiting** — brute-force mitigation on authentication endpoints
+ 
+> ⚠️ HTTPS enforcement and secure session secret configuration are required for production deployments.
+ 
+---
+ 
 ## Limitations & Margins of Error
-
-    Bitrate Variability: Actual bitrates may fluctuate due to real-world motion levels.
-
-    Codec Efficiency Differences: Compression ratios vary between implementations of H.264, H.265, and MJPEG.
-
-    Storage Overhead: Filesystem and RAID configurations can introduce overhead (usually 5-20%).
-
-    CPU/GPU Acceleration Impact: Hardware acceleration significantly affects CPU load estimation.
-
-    Network Congestion Considerations: Bandwidth estimates assume ideal network conditions.
-
-To minimize error margins, always test with real-world footage and hardware.
-
+ 
+- **Bitrate variability** — real-world bitrates fluctuate with scene complexity, lighting conditions, and encoder implementation. Results should be treated as well-informed estimates, not guaranteed values.
+- **Codec implementation differences** — H.265 efficiency gains vary significantly between camera manufacturers and firmware versions.
+- **Storage overhead** — filesystem and RAID overhead assumptions (default 5% filesystem, RAID efficiency per level) may differ from your specific hardware.
+- **Hardware acceleration** — CPU reduction factors for partial/full/advanced acceleration are modelled on typical implementations; actual savings depend on GPU model and VMS software support.
+- **Network conditions** — bandwidth estimates assume uncongested, dedicated camera network infrastructure.
+ 
+Always validate results against real-world footage and hardware before finalising procurement.
+ 
+---
+ 
 ## Contributing
-
-We welcome contributions! To contribute:
-
-    Fork the repository
-
-    Create a new branch:
-
-
-```
-git checkout -b feature-branch-name
-```
-
-Make changes & commit:
-
-```
-git commit -am "Added new feature"
-```
-
-Push to the branch:
-
-```
-git push origin feature-branch-name
-```
-
-Submit a Pull Request
-
+ 
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-branch-name`
+3. Commit your changes: `git commit -am "Description of change"`
+4. Push to the branch: `git push origin feature-branch-name`
+5. Open a Pull Request
+ 
+---
+ 
 ## Contact
-
-For inquiries or feedback, reach out via:
-
-📧 Email: codyshouey@outlook.com
-🐙 GitHub Issues: Submit an Issue
+ 
+📧 Email: codyshouey@outlook.com  
+🐙 GitHub Issues: [Submit an Issue](https://github.com/Tragic-cmd/CSRC/issues)
