@@ -43,7 +43,6 @@ db.serialize(() => {
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
     real_name TEXT NOT NULL,
-    date_of_birth TEXT NOT NULL,
     password TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'user',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -55,6 +54,14 @@ db.serialize(() => {
     reset_token TEXT DEFAULT NULL,
     reset_token_expires INTEGER DEFAULT NULL
   )`);
+});
+// One-time migration: drop date_of_birth if it exists
+db.run(`ALTER TABLE users DROP COLUMN date_of_birth`, (err) => {
+  if (err && !err.message.includes('no such column')) {
+    console.error('Migration error:', err.message);
+  } else {
+    console.log('✅ Migration: date_of_birth column removed (or already gone).');
+  }
 });
 console.log("✅ Database created successfully.");
 console.log("✅ Users table created successfully.");
@@ -163,54 +170,45 @@ app.get('/get-user', async (req, res) => {
 // Registration
 app.post('/register', async (req, res) => {
   try {
-    const { real_name, date_of_birth, username, email, password } = req.body;
+    const { real_name, username, email, password } = req.body;
 
-    // ✅ Ensure all fields exist before trimming
-    if (!username || !email || !password || !real_name || !date_of_birth) {
+    // Ensure all fields exist before trimming
+    if (!username || !email || !password || !real_name) {
       return res.status(400).json({ error: "All fields are required." });
     }
 
-    // ✅ Trim inputs
+    // Trim inputs
     const trimmedUsername = username.trim().toLowerCase();
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedPassword = password.trim();
     const trimmedRealName = real_name.trim();
 
-    // ✅ Validate date format
-    const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dobRegex.test(date_of_birth)) {
-      return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD.' });
-    }
-
-    // ✅ Validate password strength
-    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    // Validate password strength
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&^#()\-_=+])[A-Za-z\d@$!%*?&^#()\-_=+]{8,}$/;
     if (!strongPasswordRegex.test(trimmedPassword)) {
       return res.status(400).json({ error: 'Password must be at least 8 characters, include an uppercase letter, a number, and a special character.' });
     }
 
-    // ✅ Check for existing user
+    // Check for existing user
     const existingUser = await dbGet(
       `SELECT id FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)`,
       [trimmedUsername, trimmedEmail]
     );
-
     if (existingUser) {
       return res.status(400).json({ error: 'Username or email already exists.' });
     }
 
-    // ✅ Hash the password
+    // Hash the password
     const hash = await bcrypt.hash(trimmedPassword, 12);
 
-    // ✅ Insert user into database
+    // Insert user into database
     await dbRun(
-      `INSERT INTO users (username, email, real_name, date_of_birth, password, role, status, created_at) 
-       VALUES (?, ?, ?, ?, ?, 'user', 'active', CURRENT_TIMESTAMP)`,
-      [trimmedUsername, trimmedEmail, trimmedRealName, date_of_birth, hash]
+      `INSERT INTO users (username, email, real_name, password, role, status, created_at) 
+       VALUES (?, ?, ?, ?, 'user', 'active', CURRENT_TIMESTAMP)`,
+      [trimmedUsername, trimmedEmail, trimmedRealName, hash]
     );
 
-    // ✅ Return JSON response with a redirect
     res.status(201).json({ message: 'Registration successful.', redirect: 'login.html' });
-
   } catch (err) {
     console.error("Registration Error:", err.message);
     res.status(500).json({ error: 'Database error' });
