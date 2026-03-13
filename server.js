@@ -55,14 +55,6 @@ db.serialize(() => {
     reset_token_expires INTEGER DEFAULT NULL
   )`);
 });
-// One-time migration: drop date_of_birth if it exists
-db.run(`ALTER TABLE users DROP COLUMN date_of_birth`, (err) => {
-  if (err && !err.message.includes('no such column')) {
-    console.error('Migration error:', err.message);
-  } else {
-    console.log('✅ Migration: date_of_birth column removed (or already gone).');
-  }
-});
 console.log("✅ Database created successfully.");
 console.log("✅ Users table created successfully.");
 
@@ -145,25 +137,23 @@ app.get('/admin.html', ensureAuthenticated, (req, res) => {
 // Fetch authenticated user data
 app.get('/get-user', async (req, res) => {
   try {
-      if (!req.session.user || !req.session.user.id) {
-          return res.status(401).json({ error: 'User not authenticated' });
-      }
+    if (!req.session.user || !req.session.user.id) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
 
-      // console.log("Session Data:", req.session.user);  // Debugging line
+    const userId = req.session.user.id;
+    const row = await dbGet(
+      `SELECT username, email, real_name, role, status, profile_picture, two_factor_enabled, last_login 
+       FROM users WHERE id = ?`,
+      [userId]
+    );
 
-      const userId = req.session.user.id;
-      const row = await dbGet(`SELECT username, email, real_name, date_of_birth, role, status, profile_picture, two_factor_enabled, last_login 
-                               FROM users WHERE id = ?`, 
-                              [userId]);
+    if (!row) return res.status(404).json({ error: 'User not found' });
 
-      if (!row) return res.status(404).json({ error: 'User not found' });
-
-      // console.log("Fetched User Data:", row);  // Debugging line
-
-      res.json(row);
+    res.json(row);
   } catch (err) {
-      console.error("Error fetching user:", err.message);
-      res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error fetching user:", err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -282,23 +272,23 @@ app.get('/logout', (req, res) => {
 // Update profile
 app.post('/update-profile', ensureAuthenticated, async (req, res) => {
   try {
-      // console.log("Received update request:", req.body); // ✅ Debugging log
+    const { email, real_name } = req.body;
 
-      const { email, real_name, date_of_birth } = req.body;
-      if (!email || !real_name || !date_of_birth) {
-          return res.status(400).json({ error: "All fields are required." }); // ✅ Proper error response
-      }
+    if (!email || !real_name) {
+      return res.status(400).json({ error: "All fields are required." });
+    }
 
-      const userId = req.session.user.id;
+    const userId = req.session.user.id;
 
-      await dbRun(`UPDATE users SET email = ?, real_name = ?, date_of_birth = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, 
-                 [email, real_name, date_of_birth, userId]);
+    await dbRun(
+      `UPDATE users SET email = ?, real_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      [email, real_name, userId]
+    );
 
-      res.json({ message: "Profile updated successfully." });
-
+    res.json({ message: "Profile updated successfully." });
   } catch (err) {
-      console.error("Error updating profile:", err.message);
-      res.status(500).json({ error: "Database error." });
+    console.error("Error updating profile:", err.message);
+    res.status(500).json({ error: "Database error." });
   }
 });
 
