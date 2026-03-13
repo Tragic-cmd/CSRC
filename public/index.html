@@ -3,15 +3,123 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Camera Server Sizing Calculator – Enterprise VMS Infrastructure Planning</title>
-  <meta name="description" content="Right-size your surveillance infrastructure instantly. Calculate storage, RAID arrays, VMs, and physical host requirements for any IP camera deployment." />
+ 
+  <!-- ── Primary SEO ── -->
+  <title>IP Camera Server Sizing Calculator – Free VMS Storage & RAID Planning Tool</title>
+  <meta name="description" content="Free IP camera server sizing calculator for security integrators and IT architects. Calculate storage, RAID arrays, VM specs, and physical host requirements for any surveillance deployment." />
+  <meta name="keywords" content="IP camera server sizing calculator, VMS storage calculator, surveillance RAID calculator, NVR storage estimator, camera bitrate calculator, H.265 camera storage, VMS infrastructure planning, IP camera storage requirements" />
+  <meta name="author" content="Tragic Studios" />
+  <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://www.camservercalc.com/" />
   <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-  <meta property="og:title" content="Camera Server Sizing Calculator – Enterprise VMS Infrastructure Planning" />
-  <meta property="og:description" content="Right-size your surveillance infrastructure instantly. Storage, RAID, VM, and host recommendations for any camera deployment." />
+ 
+  <!-- ── Open Graph ── -->
+  <meta property="og:title" content="IP Camera Server Sizing Calculator – Free VMS Infrastructure Tool" />
+  <meta property="og:description" content="Free tool for security integrators and IT architects. Calculate storage, RAID, VMs, and physical hosts for any IP camera deployment." />
   <meta property="og:url" content="https://www.camservercalc.com/" />
   <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://www.camservercalc.com/og-preview.png" />
+  <meta property="og:site_name" content="CamServerCalc" />
+ 
+  <!-- ── Twitter Card ── -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="IP Camera Server Sizing Calculator – Free VMS Infrastructure Tool" />
+  <meta name="twitter:description" content="Calculate storage, RAID, VMs, and physical hosts for any IP camera deployment. Free tool for security integrators and IT architects." />
+  <meta name="twitter:image" content="https://www.camservercalc.com/og-preview.png" />
+ 
+  <!-- ── Structured Data: WebApplication ── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "IP Camera Server Sizing Calculator",
+    "url": "https://www.camservercalc.com",
+    "description": "Free enterprise VMS infrastructure planning tool for security integrators and IT architects. Calculate storage, RAID arrays, VM specs, and physical host requirements for any IP camera deployment.",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Web",
+    "browserRequirements": "Requires JavaScript",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "creator": {
+      "@type": "Organization",
+      "name": "Tragic Studios",
+      "url": "https://www.camservercalc.com"
+    },
+    "featureList": [
+      "IP camera storage calculation",
+      "RAID array sizing (RAID 5, 6, 10, 60)",
+      "VM and physical host sizing",
+      "Codec-aware bitrate modelling (H.264, H.265, H.266)",
+      "Motion activity profiles",
+      "Hardware acceleration planning",
+      "Save and load configurations",
+      "CSV export and print reports"
+    ]
+  }
+  </script>
+ 
+  <!-- ── Structured Data: FAQ ── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I calculate storage for IP cameras?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "IP camera storage is calculated by multiplying the per-camera bitrate (Mbps) by the number of recording hours per day, the number of cameras, and the retention period in days. You then add a buffer for growth and filesystem overhead. The exact bitrate depends on resolution, codec, frame rate, and motion activity level."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What RAID level is best for surveillance storage?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "RAID 6 is the most commonly recommended level for surveillance deployments. It tolerates two simultaneous drive failures per array and offers good storage efficiency. For very large deployments, RAID 60 provides faster rebuild times and better protection against cascading failures."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How much does H.265 reduce storage compared to H.264?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "H.265 typically reduces storage requirements by around 30% compared to H.264 at equivalent quality. H.265+ smart codec variants can achieve up to 40% reduction. Actual savings depend on the camera manufacturer's encoder implementation and scene complexity."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How many cameras can a VMS server handle?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The number of cameras a VMS server can handle depends on resolution, codec, frame rate, and whether hardware acceleration is available. A typical VM handling 1080p H.265 cameras at 15fps with no hardware acceleration can manage around 32-64 cameras. Higher resolutions or 4K streams require significantly more CPU resources."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the difference between NVR and VMS for large deployments?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "An NVR is a dedicated appliance for smaller deployments. A VMS runs on standard server hardware and virtual machines, offering far greater scalability, redundancy options, and integration flexibility for enterprise deployments with hundreds or thousands of cameras."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does hardware acceleration reduce server requirements?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, significantly. Full GPU acceleration can reduce CPU load per camera by up to 88% compared to software-only processing. Partial acceleration typically reduces CPU load by 60-65%. The calculator models all four acceleration levels: none, partial, full, and advanced AI."
+        }
+      }
+    ]
+  }
+  </script>
+ 
   <link rel="stylesheet" href="styles.css" />
   <style>
     /* ── Header ── */
@@ -23,11 +131,7 @@
       margin-bottom: 32px;
       padding-bottom: 10px;
     }
-    .landing-header-left {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
+    .landing-header-left { display: flex; align-items: center; gap: 14px; }
     .landing-header-left img.cam-icon { height: 56px; width: 56px; }
     .landing-header-left h1 { font-size: 2.2rem; margin: 0; color: #1b7a7a; }
     .landing-header-right img.studio-logo { height: 56px; width: auto; opacity: 0.85; }
@@ -133,12 +237,7 @@
     }
     body.dark-mode .output-scenario { color: #aaa; background: rgba(27,122,122,0.11); }
     .output-scenario strong { color: #1b7a7a; }
-    .output-stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
+    .output-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
     .output-stat {
       background: rgba(255,255,255,0.55);
       border: 1px solid rgba(27,122,122,0.13);
@@ -213,7 +312,7 @@
     .fc-desc { font-size: 0.8rem; color: #555; margin: 0; line-height: 1.55; }
     body.dark-mode .fc-desc { color: #aaa; }
  
-    /* ── Codec / motion tag pills ── */
+    /* ── Tag pills ── */
     .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .tag {
       font-size: 0.72rem;
@@ -239,7 +338,7 @@
     .usecase-desc { font-size: 0.8rem; color: #555; line-height: 1.55; }
     body.dark-mode .usecase-desc { color: #aaa; }
  
-    /* ── Output deep-dive section ── */
+    /* ── Output deep-dive ── */
     .output-deep-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 24px; }
     .output-deep-card {
       background: rgba(191,240,255,0.35);
@@ -254,6 +353,49 @@
     .odc-label { color: #666; }
     body.dark-mode .odc-label { color: #999; }
     .odc-val { font-weight: 700; color: #1b7a7a; }
+ 
+    /* ── SEO body text ── */
+    .seo-block {
+      background: rgba(191,240,255,0.25);
+      border: 1px solid rgba(27,122,122,0.12);
+      border-radius: 10px;
+      padding: 28px 32px;
+      margin-bottom: 48px;
+    }
+    body.dark-mode .seo-block { background: rgba(30,42,56,0.45); border-color: rgba(52,152,219,0.15); }
+    .seo-block p {
+      font-size: 0.92rem;
+      color: #555;
+      line-height: 1.8;
+      margin: 0 0 14px 0;
+      max-width: 820px;
+    }
+    .seo-block p:last-child { margin-bottom: 0; }
+    body.dark-mode .seo-block p { color: #aaa; }
+ 
+    /* ── FAQ ── */
+    .faq-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .faq-card {
+      background: rgba(191,240,255,0.35);
+      border: 1px solid rgba(27,122,122,0.13);
+      border-radius: 10px;
+      padding: 20px 22px;
+    }
+    body.dark-mode .faq-card { background: rgba(30,42,56,0.55); border-color: rgba(52,152,219,0.18); }
+    .faq-q {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #1b7a7a;
+      margin: 0 0 8px 0;
+      line-height: 1.4;
+    }
+    .faq-a {
+      font-size: 0.82rem;
+      color: #555;
+      line-height: 1.65;
+      margin: 0;
+    }
+    body.dark-mode .faq-a { color: #aaa; }
  
     /* ── CTA ── */
     .cta-box {
@@ -300,12 +442,14 @@
       .steps-grid { grid-template-columns: 1fr; }
       .usecases-grid { grid-template-columns: 1fr; }
       .output-deep-grid { grid-template-columns: 1fr; }
+      .faq-grid { grid-template-columns: 1fr; }
       .landing-header-left h1 { font-size: 1.6rem; }
     }
     @media (max-width: 600px) {
       .features-grid { grid-template-columns: 1fr; }
       .cta-box { padding: 32px 20px; }
       .landing-footer { flex-direction: column; gap: 10px; text-align: center; }
+      .seo-block { padding: 20px; }
     }
     @media (max-width: 480px) {
       .landing-header-right { display: none; }
@@ -323,7 +467,7 @@
   <!-- Header -->
   <div class="landing-header animate-in">
     <div class="landing-header-left">
-      <img class="cam-icon" src="/camera.svg" alt="Camera icon" />
+      <img class="cam-icon" src="/camera.svg" alt="IP camera server sizing calculator" />
       <h1>Camera Server Sizing Calculator</h1>
     </div>
     <div class="landing-header-right">
@@ -334,20 +478,20 @@
   <!-- Hero -->
   <div class="hero-wrapper animate-in">
     <div>
-      <div class="hero-eyebrow">Enterprise VMS Infrastructure Tool</div>
+      <div class="hero-eyebrow">Free VMS Infrastructure Planning Tool</div>
       <h2 class="hero-headline">Right-size your surveillance infrastructure — <em>instantly.</em></h2>
       <p class="hero-sub">
         Stop guessing. The IP Camera Server Sizing Calculator delivers precise storage, RAID array,
         VM, and physical host recommendations for large-scale deployments — accounting for codec,
-        motion profile, frame rate, redundancy, and more.
+        motion profile, frame rate, redundancy, and more. Free for security integrators, IT architects,
+        and enterprise security teams.
       </p>
       <div class="hero-actions">
-        <a href="/login.html" class="btn-primary">Get Started →</a>
+        <a href="/login.html" class="btn-primary">Get Started Free →</a>
         <a href="#how-it-works" class="btn-outline">See How It Works</a>
       </div>
     </div>
  
-    <!-- Example output card — numbers derived from the actual calculation engine -->
     <div class="output-card">
       <div class="output-card-label">Example Output</div>
       <div class="output-scenario">
@@ -378,6 +522,28 @@
     </div>
   </div>
  
+  <!-- SEO body text -->
+  <div class="seo-block">
+    <p>
+      The <strong>IP Camera Server Sizing Calculator</strong> is a free tool for <strong>security integrators</strong>,
+      <strong>IT architects</strong>, and enterprise security teams planning IP camera deployments. Enter your camera count,
+      resolution, compression codec, and retention period to instantly calculate storage requirements, RAID configuration,
+      VM sizing, and physical host recommendations — all in one report.
+    </p>
+    <p>
+      Unlike basic NVR storage estimators, this tool models <strong>per-camera bitrate</strong> using real VBR and CBR codec
+      behaviour, motion activity profiles, and frame rate scaling. Whether you're planning a 10-camera edge deployment or a
+      multi-site enterprise system with thousands of cameras, the calculator accounts for H.264, H.265, H.265+, H.266, and
+      MJPEG codecs, RAID 5 through RAID 60, and hardware acceleration levels from software-only to full GPU offload.
+    </p>
+    <p>
+      Results include a complete <strong>surveillance storage calculator</strong> breakdown — raw storage, usable capacity
+      after RAID overhead, filesystem buffer, total drive count, VM CPU and RAM requirements, and physical host sizing with
+      N+1 or N+2 high-availability redundancy. Save named site configurations for reuse, export to CSV for BOM generation,
+      or print a formatted report for client proposals.
+    </p>
+  </div>
+ 
   <div class="section-divider"></div>
  
   <!-- How It Works -->
@@ -406,7 +572,7 @@
  
   <div class="section-divider"></div>
  
-  <!-- What the output covers -->
+  <!-- Report Output -->
   <div class="section">
     <div class="section-label">Report output</div>
     <h2>Everything in one report.</h2>
@@ -491,7 +657,7 @@
       <div class="feature-card">
         <span class="fc-icon">🖥️</span>
         <p class="fc-title">VM &amp; Physical Host Sizing</p>
-        <p class="fc-desc">CPU cores calculated per codec, resolution, frame rate, and hardware acceleration level (none / partial / full / advanced). Physical hosts sized using dual-socket EPYC baselines with configurable N+1 or N+2 HA buffers.</p>
+        <p class="fc-desc">CPU cores calculated per codec, resolution, frame rate, and hardware acceleration level. Physical hosts sized using dual-socket EPYC baselines with configurable N+1 or N+2 HA buffers.</p>
         <div class="tag-row">
           <span class="tag">No HW Accel</span>
           <span class="tag">Partial</span>
@@ -507,7 +673,7 @@
       <div class="feature-card">
         <span class="fc-icon">📋</span>
         <p class="fc-title">Actionable Architecture Recommendations</p>
-        <p class="fc-desc">Hypervisor selection, storage architecture, HA strategy, and networking recommendations all scale dynamically with your VM count and total storage — not generic advice, but tier-matched guidance.</p>
+        <p class="fc-desc">Hypervisor selection, storage architecture, HA strategy, and networking recommendations all scale dynamically with your VM count and total storage — tier-matched guidance, not generic advice.</p>
       </div>
     </div>
   </div>
@@ -537,10 +703,45 @@
  
   <div class="section-divider"></div>
  
+  <!-- FAQ -->
+  <div class="section" id="faq">
+    <div class="section-label">FAQ</div>
+    <h2>Common questions about IP camera storage sizing</h2>
+    <p class="section-sub">Answers to the most frequently asked questions about planning surveillance infrastructure.</p>
+    <div class="faq-grid">
+      <div class="faq-card">
+        <h3 class="faq-q">How do I calculate storage for IP cameras?</h3>
+        <p class="faq-a">Multiply the per-camera bitrate (Mbps) by recording hours per day, number of cameras, and retention days. Add a growth buffer and filesystem overhead on top. Bitrate depends on resolution, codec, frame rate, and scene motion — this tool models all of those variables automatically.</p>
+      </div>
+      <div class="faq-card">
+        <h3 class="faq-q">What RAID level is best for surveillance storage?</h3>
+        <p class="faq-a">RAID 6 is the most widely recommended level for surveillance. It tolerates two simultaneous drive failures per array and offers strong storage efficiency. For large deployments, RAID 60 provides faster rebuild times and better protection against cascading failures across many drives.</p>
+      </div>
+      <div class="faq-card">
+        <h3 class="faq-q">How much does H.265 reduce storage vs H.264?</h3>
+        <p class="faq-a">H.265 typically reduces storage by around 30% compared to H.264 at equivalent quality. H.265+ smart codec variants can achieve up to 40% reduction. Actual savings vary by manufacturer encoder implementation and scene complexity.</p>
+      </div>
+      <div class="faq-card">
+        <h3 class="faq-q">How many cameras can a VMS server handle?</h3>
+        <p class="faq-a">It depends on resolution, codec, frame rate, and hardware acceleration. A typical VM handling 1080p H.265 at 15fps with no GPU acceleration manages around 32–64 cameras. 4K streams require significantly more CPU. This tool calculates the exact VM count and specs for your inputs.</p>
+      </div>
+      <div class="faq-card">
+        <h3 class="faq-q">What is the difference between NVR and VMS?</h3>
+        <p class="faq-a">An NVR is a dedicated appliance suited to smaller deployments. A VMS runs on standard server hardware and VMs, offering far greater scalability, redundancy options, and integration flexibility for enterprise deployments with hundreds or thousands of cameras.</p>
+      </div>
+      <div class="faq-card">
+        <h3 class="faq-q">Does hardware acceleration reduce server requirements?</h3>
+        <p class="faq-a">Yes, significantly. Full GPU acceleration (e.g. NVIDIA T4, A10) can reduce CPU load per camera by up to 88% compared to software-only processing. Partial acceleration typically reduces CPU load by 60–65%. This tool models all four acceleration levels.</p>
+      </div>
+    </div>
+  </div>
+ 
+  <div class="section-divider"></div>
+ 
   <!-- CTA -->
   <div class="cta-box">
     <h2>Ready to size your deployment?</h2>
-    <p>Create a free account and run your first calculation in minutes. Save and share configurations with your team.</p>
+    <p>Create a free account and run your first IP camera storage calculation in minutes. Save and share configurations with your team.</p>
     <div class="cta-actions">
       <a href="/login.html" class="btn-primary">Login to Get Started →</a>
       <a href="/register.html" class="btn-outline">Create Free Account</a>
