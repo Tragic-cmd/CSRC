@@ -31,11 +31,11 @@
     .landing-header-left img.cam-icon { height: 56px; width: 56px; }
     .landing-header-left h1 { font-size: 2.2rem; margin: 0; color: #1b7a7a; }
     .landing-header-right img.studio-logo { height: 56px; width: auto; opacity: 0.85; }
-
+ 
     /* ── Hero ── */
     .hero-wrapper {
       display: grid;
-      grid-template-columns: 1fr 400px;
+      grid-template-columns: 1fr 420px;
       gap: 36px;
       align-items: start;
       margin-bottom: 48px;
@@ -70,7 +70,7 @@
     }
     body.dark-mode .hero-sub { color: #aaa; }
     .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
-
+ 
     .btn-primary {
       background-color: #1b7a7a;
       color: rgb(191,240,255);
@@ -85,7 +85,7 @@
       transition: background-color 0.2s, transform 0.15s;
     }
     .btn-primary:hover { background-color: #22a0a0; transform: translateY(-1px); text-decoration: none; }
-
+ 
     .btn-outline {
       background: transparent;
       color: #1b7a7a;
@@ -102,7 +102,7 @@
     .btn-outline:hover { background: rgba(27,122,122,0.08); transform: translateY(-1px); text-decoration: none; }
     body.dark-mode .btn-outline { color: rgb(191,240,255); border-color: #22a0a0; }
     body.dark-mode .btn-outline:hover { background: rgba(27,122,122,0.2); }
-
+ 
     /* ── Output card ── */
     .output-card {
       background: rgba(191,240,255,0.55);
@@ -161,7 +161,7 @@
     }
     body.dark-mode .output-footer { color: #aaa; }
     .output-footer strong { color: #1b7a7a; font-weight: 700; }
-
+ 
     /* ── Sections ── */
     .section { margin-bottom: 48px; }
     .section-label {
@@ -180,7 +180,7 @@
       background: linear-gradient(90deg, transparent, #1b7a7a55, transparent);
       margin: 48px 0;
     }
-
+ 
     /* ── Steps ── */
     .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
     .step-card {
@@ -196,7 +196,7 @@
     .step-title { font-size: 0.9rem; font-weight: 700; color: #1b7a7a; margin-bottom: 6px; }
     .step-desc { font-size: 0.82rem; color: #555; line-height: 1.6; }
     body.dark-mode .step-desc { color: #aaa; }
-
+ 
     /* ── Features ── */
     .features-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
     .feature-card {
@@ -212,7 +212,20 @@
     .fc-title { font-size: 0.8rem; font-weight: 700; color: #1b7a7a; margin: 0 0 5px 0; text-transform: uppercase; letter-spacing: 0.04em; }
     .fc-desc { font-size: 0.8rem; color: #555; margin: 0; line-height: 1.55; }
     body.dark-mode .fc-desc { color: #aaa; }
-
+ 
+    /* ── Codec / motion tag pills ── */
+    .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(27,122,122,0.3);
+      color: #1b7a7a;
+      background: rgba(27,122,122,0.07);
+    }
+    body.dark-mode .tag { color: #7ee0e0; background: rgba(27,122,122,0.15); border-color: rgba(27,122,122,0.4); }
+ 
     /* ── Use cases ── */
     .usecases-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
     .usecase-card {
@@ -225,7 +238,23 @@
     .usecase-title { font-size: 0.82rem; font-weight: 700; color: #1b7a7a; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em; }
     .usecase-desc { font-size: 0.8rem; color: #555; line-height: 1.55; }
     body.dark-mode .usecase-desc { color: #aaa; }
-
+ 
+    /* ── Output deep-dive section ── */
+    .output-deep-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 24px; }
+    .output-deep-card {
+      background: rgba(191,240,255,0.35);
+      border: 1px solid rgba(27,122,122,0.13);
+      border-radius: 8px;
+      padding: 18px 20px;
+    }
+    body.dark-mode .output-deep-card { background: rgba(30,42,56,0.55); border-color: rgba(52,152,219,0.18); }
+    .odc-title { font-size: 0.78rem; font-weight: 700; color: #1b7a7a; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+    .odc-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.82rem; padding: 4px 0; border-bottom: 1px solid rgba(27,122,122,0.08); }
+    .odc-row:last-child { border-bottom: none; }
+    .odc-label { color: #666; }
+    body.dark-mode .odc-label { color: #999; }
+    .odc-val { font-weight: 700; color: #1b7a7a; }
+ 
     /* ── CTA ── */
     .cta-box {
       background: linear-gradient(145deg, rgba(27,122,122,0.08) 0%, rgba(52,152,219,0.10) 100%);
@@ -240,7 +269,7 @@
     .cta-box p { font-size: 0.95rem; color: #555; line-height: 1.7; margin-bottom: 28px; max-width: 500px; margin-left: auto; margin-right: auto; }
     body.dark-mode .cta-box p { color: #aaa; }
     .cta-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-
+ 
     /* ── Footer ── */
     .landing-footer {
       border-top: 1px solid rgba(27,122,122,0.2);
@@ -257,19 +286,20 @@
     .footer-links { display: flex; gap: 20px; }
     .footer-brand { display: flex; align-items: center; gap: 8px; }
     .footer-brand img { height: 24px; opacity: 0.65; }
-
+ 
     @keyframes fadeSlideIn {
       from { opacity: 0; transform: translateY(12px); }
       to   { opacity: 1; transform: translateY(0); }
     }
     .animate-in { animation: fadeSlideIn 0.45s ease both; }
-
+ 
     /* ── Responsive ── */
     @media (max-width: 860px) {
       .hero-wrapper { grid-template-columns: 1fr; }
       .output-card { display: none; }
       .steps-grid { grid-template-columns: 1fr; }
       .usecases-grid { grid-template-columns: 1fr; }
+      .output-deep-grid { grid-template-columns: 1fr; }
       .landing-header-left h1 { font-size: 1.6rem; }
     }
     @media (max-width: 600px) {
@@ -284,12 +314,12 @@
 </head>
 <body>
 <div class="container">
-
+ 
   <!-- Dark Mode Toggle -->
   <div style="display:flex; justify-content:flex-end; gap:10px; margin-bottom:8px;">
     <button class="btn-primary" onclick="toggleDarkMode()">Toggle Dark Mode</button>
   </div>
-
+ 
   <!-- Header -->
   <div class="landing-header animate-in">
     <div class="landing-header-left">
@@ -300,54 +330,56 @@
       <img class="studio-logo" src="/tragicstudios.svg" alt="Tragic Studios" />
     </div>
   </div>
-
+ 
   <!-- Hero -->
   <div class="hero-wrapper animate-in">
     <div>
       <div class="hero-eyebrow">Enterprise VMS Infrastructure Tool</div>
       <h2 class="hero-headline">Right-size your surveillance infrastructure — <em>instantly.</em></h2>
       <p class="hero-sub">
-        Stop guessing. The IP Camera Server Sizing Calculator delivers precise storage, RAID, VM,
-        and physical host recommendations for large-scale deployments — in seconds.
+        Stop guessing. The IP Camera Server Sizing Calculator delivers precise storage, RAID array,
+        VM, and physical host recommendations for large-scale deployments — accounting for codec,
+        motion profile, frame rate, redundancy, and more.
       </p>
       <div class="hero-actions">
         <a href="/login.html" class="btn-primary">Get Started →</a>
         <a href="#how-it-works" class="btn-outline">See How It Works</a>
       </div>
     </div>
-
+ 
+    <!-- Example output card — numbers derived from the actual calculation engine -->
     <div class="output-card">
       <div class="output-card-label">Example Output</div>
       <div class="output-scenario">
-        <strong>1,500 cameras</strong> &nbsp;·&nbsp; 720p &nbsp;·&nbsp; H.264 &nbsp;·&nbsp; 10 fps &nbsp;·&nbsp; 30-day retention
+        <strong>200 cameras</strong> &nbsp;·&nbsp; 1080p &nbsp;·&nbsp; H.265 &nbsp;·&nbsp; 15 fps &nbsp;·&nbsp; Medium motion &nbsp;·&nbsp; 30-day retention
       </div>
       <div class="output-stats">
         <div class="output-stat">
-          <span class="output-val">448 TB</span>
-          <span class="output-key">Usable storage required</span>
+          <span class="output-val">~1.68 Mbps</span>
+          <span class="output-key">Bitrate per camera</span>
         </div>
         <div class="output-stat">
-          <span class="output-val">84 drives</span>
-          <span class="output-key">RAID 6 arrays @ 8 TB</span>
+          <span class="output-val">~18 TB</span>
+          <span class="output-key">Usable storage (with overhead)</span>
         </div>
         <div class="output-stat">
-          <span class="output-val">15 VMs</span>
-          <span class="output-key">6 cores / 40 GB RAM each</span>
+          <span class="output-val">24 drives</span>
+          <span class="output-key">RAID 6 — 2 arrays × 12 drives @ 2 TB</span>
         </div>
         <div class="output-stat">
-          <span class="output-val">3 hosts</span>
-          <span class="output-key">N+2 redundancy</span>
+          <span class="output-val">2 VMs</span>
+          <span class="output-key">100 cameras each · 8 cores · 40 GB RAM</span>
         </div>
       </div>
       <div class="output-footer">
-        <span>Aggregate throughput</span>
-        <strong>2.8 Gbps</strong>
+        <span>Physical hosts (N+1)</span>
+        <strong>2 hosts</strong>
       </div>
     </div>
   </div>
-
+ 
   <div class="section-divider"></div>
-
+ 
   <!-- How It Works -->
   <div class="section" id="how-it-works">
     <div class="section-label">How it works</div>
@@ -357,23 +389,66 @@
       <div class="step-card">
         <div class="step-num">01</div>
         <div class="step-title">Enter Your Camera Inputs</div>
-        <p class="step-desc">Camera count, resolution (360p–4K), frame rate, codec (H.264 or H.265), motion activity level, and recording schedule.</p>
+        <p class="step-desc">Camera count, resolution (720p–8K), frame rate, codec (MJPEG through H.266), motion activity profile, recording mode (24/7 or custom hours), and hardware acceleration level.</p>
       </div>
       <div class="step-card">
         <div class="step-num">02</div>
-        <div class="step-title">Configure Retention &amp; Redundancy</div>
-        <p class="step-desc">Set retention period, RAID level, storage buffer, filesystem overhead, and VM or host redundancy model (N+1 or N+2).</p>
+        <div class="step-title">Configure Retention, RAID &amp; Redundancy</div>
+        <p class="step-desc">Set retention period, drive size, RAID level (RAID 5 / 6 / 10 / 60), storage growth buffer, filesystem overhead, max cameras per VM, and HA redundancy (none / N+1 / N+2).</p>
       </div>
       <div class="step-card">
         <div class="step-num">03</div>
         <div class="step-title">Get Your Full Sizing Report</div>
-        <p class="step-desc">Detailed storage capacity, drive groupings, RAID configs, VM allocations, and physical host recommendations — ready for procurement.</p>
+        <p class="step-desc">Per-camera bitrate, total storage with buffer and overhead, RAID drive layout, VM count with CPU/RAM/network specs, physical host count, hypervisor guidance, and scaling recommendations.</p>
       </div>
     </div>
   </div>
-
+ 
   <div class="section-divider"></div>
-
+ 
+  <!-- What the output covers -->
+  <div class="section">
+    <div class="section-label">Report output</div>
+    <h2>Everything in one report.</h2>
+    <p class="section-sub">The calculator produces four interconnected analysis sections — each informed by the same underlying bitrate model.</p>
+    <div class="output-deep-grid">
+      <div class="output-deep-card">
+        <div class="odc-title">📦 Storage Analysis</div>
+        <div class="odc-row"><span class="odc-label">Per-camera bitrate</span><span class="odc-val">Mbps (VBR/CBR modelled)</span></div>
+        <div class="odc-row"><span class="odc-label">Daily storage per camera</span><span class="odc-val">GB/day</span></div>
+        <div class="odc-row"><span class="odc-label">Total raw storage</span><span class="odc-val">TB</span></div>
+        <div class="odc-row"><span class="odc-label">With growth buffer</span><span class="odc-val">TB (configurable %)</span></div>
+        <div class="odc-row"><span class="odc-label">With filesystem overhead</span><span class="odc-val">TB (configurable %)</span></div>
+      </div>
+      <div class="output-deep-card">
+        <div class="odc-title">⚙️ RAID Configuration</div>
+        <div class="odc-row"><span class="odc-label">RAID level</span><span class="odc-val">RAID 5 / 6 / 10 / 60</span></div>
+        <div class="odc-row"><span class="odc-label">Drive count &amp; size</span><span class="odc-val">Auto-grouped arrays</span></div>
+        <div class="odc-row"><span class="odc-label">Raw vs. usable capacity</span><span class="odc-val">TB each</span></div>
+        <div class="odc-row"><span class="odc-label">Storage efficiency</span><span class="odc-val">%</span></div>
+        <div class="odc-row"><span class="odc-label">Estimated rebuild time</span><span class="odc-val">Hours per drive</span></div>
+      </div>
+      <div class="output-deep-card">
+        <div class="odc-title">🖥️ VM Requirements</div>
+        <div class="odc-row"><span class="odc-label">VMs needed</span><span class="odc-val">Count</span></div>
+        <div class="odc-row"><span class="odc-label">Cameras per VM</span><span class="odc-val">Count</span></div>
+        <div class="odc-row"><span class="odc-label">CPU cores per VM</span><span class="odc-val">With overhead factor</span></div>
+        <div class="odc-row"><span class="odc-label">RAM per VM</span><span class="odc-val">GB (non-linear scaling)</span></div>
+        <div class="odc-row"><span class="odc-label">Network bandwidth per VM</span><span class="odc-val">Mbps</span></div>
+      </div>
+      <div class="output-deep-card">
+        <div class="odc-title">🏗️ Physical Infrastructure</div>
+        <div class="odc-row"><span class="odc-label">Physical hosts needed</span><span class="odc-val">Count (HA buffer included)</span></div>
+        <div class="odc-row"><span class="odc-label">Hypervisor recommendation</span><span class="odc-val">Tiered by VM count</span></div>
+        <div class="odc-row"><span class="odc-label">Storage architecture</span><span class="odc-val">Tiered by TB required</span></div>
+        <div class="odc-row"><span class="odc-label">CPU &amp; RAM per host</span><span class="odc-val">Specific SKUs suggested</span></div>
+        <div class="odc-row"><span class="odc-label">HA, networking &amp; scaling recs</span><span class="odc-val">Included</span></div>
+      </div>
+    </div>
+  </div>
+ 
+  <div class="section-divider"></div>
+ 
   <!-- Features -->
   <div class="section">
     <div class="section-label">Features</div>
@@ -382,29 +457,63 @@
     <div class="features-grid">
       <div class="feature-card">
         <span class="fc-icon">🎥</span>
-        <p class="fc-title">Multi-Variable Camera Inputs</p>
-        <p class="fc-desc">Resolution, frame rate, compression codec (H.264 / H.265), motion activity, and recording mode — every variable accounted for in the bitrate model.</p>
+        <p class="fc-title">Advanced Bitrate Modelling</p>
+        <p class="fc-desc">VBR and CBR codec paths are modelled separately. Motion and idle bitrates are weighted by hours of activity per day, with adaptive minimum bitrate floors per resolution.</p>
+        <div class="tag-row">
+          <span class="tag">MJPEG</span>
+          <span class="tag">H.264</span>
+          <span class="tag">H.264+</span>
+          <span class="tag">H.265</span>
+          <span class="tag">H.265+</span>
+          <span class="tag">H.266</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <span class="fc-icon">📐</span>
+        <p class="fc-title">Motion Activity Profiles</p>
+        <p class="fc-desc">10 named profiles from Very Low to Very High — each with calibrated motion hours, idle hours, and bitrate multipliers. Includes special-purpose day-only, night-only, and rush-hour profiles.</p>
+        <div class="tag-row">
+          <span class="tag">Very Low</span>
+          <span class="tag">Low</span>
+          <span class="tag">Medium</span>
+          <span class="tag">High</span>
+          <span class="tag">Very High</span>
+          <span class="tag">Day Only</span>
+          <span class="tag">Night Only</span>
+          <span class="tag">Rush Hours</span>
+        </div>
       </div>
       <div class="feature-card">
         <span class="fc-icon">🗄️</span>
-        <p class="fc-title">Precise Storage Sizing</p>
-        <p class="fc-desc">Per-camera bitrate modelling with configurable retention periods, storage buffer, and filesystem overhead for accurate usable capacity estimates.</p>
-      </div>
-      <div class="feature-card">
-        <span class="fc-icon">⚙️</span>
-        <p class="fc-title">RAID Array Recommendations</p>
-        <p class="fc-desc">Auto-grouped drive arrays for RAID 6, RAID 10, and RAID 60 — with fault tolerance, storage efficiency, and rebuild time estimates.</p>
+        <p class="fc-title">RAID Array Sizing</p>
+        <p class="fc-desc">RAID 5, 6, 10, and 60 are all supported. RAID 6 and 60 auto-group drives into 12-drive arrays. Results include total drives, raw and usable capacity, storage efficiency, fault tolerance, and estimated rebuild time.</p>
       </div>
       <div class="feature-card">
         <span class="fc-icon">🖥️</span>
         <p class="fc-title">VM &amp; Physical Host Sizing</p>
-        <p class="fc-desc">CPU cores, RAM, and network throughput per VM — with N+1 and N+2 host redundancy planning and hypervisor recommendations built in.</p>
+        <p class="fc-desc">CPU cores calculated per codec, resolution, frame rate, and hardware acceleration level (none / partial / full / advanced). Physical hosts sized using dual-socket EPYC baselines with configurable N+1 or N+2 HA buffers.</p>
+        <div class="tag-row">
+          <span class="tag">No HW Accel</span>
+          <span class="tag">Partial</span>
+          <span class="tag">Full GPU</span>
+          <span class="tag">Advanced AI</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <span class="fc-icon">💾</span>
+        <p class="fc-title">Save &amp; Load Configurations</p>
+        <p class="fc-desc">Save named site configurations to the server and reload them at any time. Export results to CSV or print a full formatted report for procurement and proposal use.</p>
+      </div>
+      <div class="feature-card">
+        <span class="fc-icon">📋</span>
+        <p class="fc-title">Actionable Architecture Recommendations</p>
+        <p class="fc-desc">Hypervisor selection, storage architecture, HA strategy, and networking recommendations all scale dynamically with your VM count and total storage — not generic advice, but tier-matched guidance.</p>
       </div>
     </div>
   </div>
-
+ 
   <div class="section-divider"></div>
-
+ 
   <!-- Use Cases -->
   <div class="section">
     <div class="section-label">Built for</div>
@@ -413,21 +522,21 @@
     <div class="usecases-grid">
       <div class="usecase-card">
         <div class="usecase-title">Security Integrators</div>
-        <p class="usecase-desc">Generate accurate BOMs and infrastructure proposals for clients before committing to a vendor quote.</p>
+        <p class="usecase-desc">Generate accurate BOMs and infrastructure proposals for clients before committing to a vendor quote. Save and reload configurations per site.</p>
       </div>
       <div class="usecase-card">
         <div class="usecase-title">IT Architects</div>
-        <p class="usecase-desc">Validate hypervisor and storage specs for on-premise VMS deployments across campus or multi-site environments.</p>
+        <p class="usecase-desc">Validate hypervisor and storage specs for on-premise VMS deployments across campus or multi-site environments, with codec-aware CPU and RAM sizing.</p>
       </div>
       <div class="usecase-card">
         <div class="usecase-title">Enterprise Security Teams</div>
-        <p class="usecase-desc">Plan infrastructure refresh cycles and capacity upgrades backed by precise per-camera modelling.</p>
+        <p class="usecase-desc">Plan infrastructure refresh cycles and capacity upgrades backed by precise per-camera bitrate modelling, HA redundancy planning, and scaling headroom estimates.</p>
       </div>
     </div>
   </div>
-
+ 
   <div class="section-divider"></div>
-
+ 
   <!-- CTA -->
   <div class="cta-box">
     <h2>Ready to size your deployment?</h2>
@@ -437,21 +546,21 @@
       <a href="/register.html" class="btn-outline">Create Free Account</a>
     </div>
   </div>
-
+ 
   <!-- Footer -->
   <div class="landing-footer">
     <div class="footer-brand">
       <img src="/tragicstudios.svg" alt="Tragic Studios" />
-      <span>© 2026 Tragic Studios. All rights reserved.</span>
+      <span>© 2025 Tragic Studios. All rights reserved.</span>
     </div>
     <div class="footer-links">
       <a href="/login.html">Login</a>
       <a href="/register.html">Register</a>
     </div>
   </div>
-
+ 
 </div><!-- /container -->
-
+ 
 <script>
   function toggleDarkMode() {
     document.body.classList.toggle('dark-mode');
