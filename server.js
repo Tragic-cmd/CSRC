@@ -630,37 +630,39 @@ function authorizeOwner(req, res, next) {
 
 app.get('/admin/get-users', authorizeOwner, async (req, res) => {
   try {
-      const users = await new Promise((resolve, reject) => {
-          db.all(`SELECT id, username, email, real_name, date_of_birth, role, status, profile_picture, 
-                  two_factor_enabled, last_login, created_at, updated_at 
-                  FROM users`, 
-          [], 
-          (err, rows) => {
-              if (err) reject(err);
-              else resolve(rows);
-          });
-      });
-      
-      res.json(users);
+    const users = await new Promise((resolve, reject) => {
+      db.all(
+        `SELECT id, username, email, real_name, role, status, profile_picture,
+                two_factor_enabled, last_login, created_at, updated_at
+         FROM users`,
+        [],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        }
+      );
+    });
+
+    res.json(users);
   } catch (err) {
-      console.error("Error fetching users:", err.message);
-      res.status(500).json({ error: "Database error." });
+    console.error("Error fetching users:", err.message);
+    res.status(500).json({ error: "Database error." });
   }
 });
 
 app.post('/admin/update-user', authorizeOwner, async (req, res) => {
   try {
-      const { id, username, email, real_name, date_of_birth, role, status, profile_picture } = req.body;
+    const { id, username, email, real_name, role, status, profile_picture } = req.body;
 
-      await dbRun(
-          `UPDATE users SET username = ?, email = ?, real_name = ?, date_of_birth = ?, role = ?, status = ?, profile_picture = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-          [username, email, real_name, date_of_birth, role, status, profile_picture, id]
-      );
+    await dbRun(
+      `UPDATE users SET username = ?, email = ?, real_name = ?, role = ?, status = ?, profile_picture = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      [username, email, real_name, role, status, profile_picture, id]
+    );
 
-      res.json({ message: "User updated successfully!" });
+    res.json({ message: "User updated successfully!" });
   } catch (err) {
-      console.error("Error updating user:", err.message);
-      res.status(500).json({ error: "Database error." });
+    console.error("Error updating user:", err.message);
+    res.status(500).json({ error: "Database error." });
   }
 });
 
